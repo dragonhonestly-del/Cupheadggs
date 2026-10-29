@@ -1,0 +1,2622 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Cuphead: Vintage Rubberhose Root Pack</title>
+    <!-- Telegram Mini App Script -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Henny+Penny&family=Kalam:wght@700&family=Shrikhand&display=swap" rel="stylesheet">
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
+            margin: 0;
+            padding: 0;
+        }
+        body, html {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #12100e;
+            font-family: 'Kalam', cursive;
+            touch-action: none;
+        }
+        #game-wrapper {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #191613;
+        }
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            image-rendering: auto;
+        }
+        /* 1930s Film Grain & Vignette Overlay */
+        .film-overlay {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            box-shadow: inset 0 0 100px rgba(10, 8, 5, 0.75), inset 0 0 200px rgba(0, 0, 0, 0.5);
+            background: radial-gradient(circle, transparent 60%, rgba(18, 14, 10, 0.4) 100%);
+            mix-blend-mode: multiply;
+            z-index: 25;
+        }
+        /* Film Jitter & Dust Animation */
+        .film-grain-lines {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            opacity: 0.12;
+            z-index: 26;
+            background: repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.15) 0px, transparent 1px, transparent 2px);
+            animation: grainShift 0.09s infinite;
+        }
+        @keyframes grainShift {
+            0% { transform: translate(0, 0); }
+            50% { transform: translate(-1px, 2px); }
+            100% { transform: translate(1px, -1px); }
+        }
+        /* Orientation Guard Overlay */
+        #portrait-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: #e8d8b5;
+            z-index: 99999;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #2b211b;
+            text-align: center;
+            padding: 24px;
+            border: 12px double #3a2d24;
+        }
+        @media screen and (orientation: portrait) {
+            #portrait-overlay.enforce-landscape {
+                display: flex;
+            }
+        }
+        .phone-rotate-anim {
+            animation: rotatePhone 2.2s infinite ease-in-out;
+        }
+        @keyframes rotatePhone {
+            0%, 15% { transform: rotate(0deg); }
+            50%, 65% { transform: rotate(-90deg); }
+            100% { transform: rotate(0deg); }
+        }
+        /* 1930s Authentic Equip Cards */
+        .equip-card {
+            background: #e8dbc3;
+            border: 4px solid #2b221b;
+            box-shadow: 6px 8px 0px #1e1712, inset 0 0 16px rgba(160, 130, 95, 0.45);
+            position: relative;
+            transition: transform 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.15s;
+        }
+        .equip-card:active {
+            transform: translateY(4px) scale(0.98);
+            box-shadow: 2px 3px 0px #1e1712;
+        }
+        .card-inner-border {
+            border: 2px solid #5a493b;
+        }
+        /* Vintage Controls */
+        .vintage-btn {
+            background: rgba(232, 219, 195, 0.85);
+            border: 3px solid #2b221b;
+            box-shadow: 0 4px 0 #2b221b;
+            color: #2b221b;
+            font-family: 'Shrikhand', cursive;
+            transition: transform 0.05s, background 0.05s;
+        }
+        .vintage-btn:active, .vintage-btn.active {
+            transform: translateY(3px);
+            box-shadow: 0 1px 0 #2b221b;
+            background: #fdf5e2;
+        }
+        .vintage-btn.auto-fire-on {
+            background: #ff5252 !important;
+            color: #fff !important;
+            border-color: #7f1d1d !important;
+            animation: pulseFire 0.4s infinite alternate;
+        }
+        @keyframes pulseFire {
+            from { transform: scale(1); }
+            to { transform: scale(1.06); }
+        }
+        .locked-mode {
+            background: #ffd32a !important;
+            color: #2b221b !important;
+        }
+    </style>
+</head>
+<body>
+
+<!-- Vintage Orientation Lock Overlay -->
+<div id="portrait-overlay" class="enforce-landscape">
+    <div class="phone-rotate-anim mb-4">
+        <svg width="78" height="78" viewBox="0 0 24 24" fill="none">
+            <rect x="5" y="2" width="14" height="20" rx="3" stroke="#2b211b" stroke-width="2.5" fill="#fdf5e2"/>
+            <rect x="7" y="5" width="10" height="14" rx="1" fill="#cbb38f"/>
+            <circle cx="12" cy="20.5" r="1.2" fill="#2b211b"/>
+        </svg>
+    </div>
+    <h1 class="text-3xl font-extrabold tracking-wider font-['Shrikhand'] uppercase text-[#2b211b]">ПОВЕРНИТЕ ТЕЛЕФОН</h1>
+    <p class="text-base text-[#4a3b30] mt-1 max-w-sm font-bold">Для классической широкоформатной битвы 1930-х годов играйте горизонтально!</p>
+    <button onclick="document.getElementById('portrait-overlay').classList.remove('enforce-landscape')" class="mt-5 px-5 py-2.5 bg-[#2b211b] text-[#fdf5e2] rounded-xl text-sm font-bold shadow-md">
+        ИГРАТЬ ВСЕ РАВНО
+    </button>
+</div>
+
+<div id="game-wrapper">
+    <!-- Main 1930s Game Canvas -->
+    <canvas id="gameCanvas" width="1280" height="720"></canvas>
+
+    <!-- Retro Grain and Vignette Layers -->
+    <div class="film-grain-lines"></div>
+    <div class="film-overlay"></div>
+
+    <!-- ================= AUTHENTIC 1930s MENU LAYER ================= -->
+    <div id="menu-screen" class="absolute inset-0 z-30 flex flex-col justify-between p-5 md:p-8 bg-[#251e18] bg-opacity-95">
+        <!-- Top Title Bar -->
+        <div class="flex justify-between items-center relative z-10 px-4">
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-full border-3 border-[#2b221b] bg-[#e05244] flex items-center justify-center shadow-md">
+                    <span class="text-white font-['Shrikhand'] text-xl">C</span>
+                </div>
+                <div>
+                    <h1 class="text-3xl md:text-5xl font-['Shrikhand'] tracking-wider text-[#e8dbc3] drop-shadow-[2px_3px_0_#140f0c]">
+                        CUPHEAD
+                    </h1>
+                    <span class="text-xs md:text-sm tracking-widest text-[#d89759] uppercase font-['Shrikhand']">
+                        THE ROOT PACK • 1930s CARTOON BATTLE
+                    </span>
+                </div>
+            </div>
+
+            <!-- Header Coin Purse & Loadout -->
+            <div class="flex items-center gap-3">
+                <div class="bg-[#e8dbc3] border-2 border-[#2b221b] px-4 py-1.5 rounded-xl shadow-[3px_3px_0_#140f0c] flex items-center gap-2">
+                    <span class="text-xs font-bold text-[#634e3e] uppercase">СТВОЛ:</span>
+                    <span id="menu-weapon-lbl" class="text-sm font-['Shrikhand'] text-[#2b221b]">PEASHOOTER</span>
+                </div>
+                <div class="bg-[#ffd32a] border-2 border-[#2b221b] px-4 py-1.5 rounded-xl shadow-[3px_3px_0_#140f0c] flex items-center gap-2">
+                    <span class="text-xs font-bold text-[#2b221b]">МОНЕТЫ:</span>
+                    <span id="coin-counter" class="text-lg font-['Shrikhand'] text-[#2b221b]">0</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- The 3 Vintage Equip Cards (Cuphead / Mugman / Porkrind) -->
+        <div class="grid grid-cols-3 gap-5 md:gap-9 max-w-5xl w-full mx-auto my-auto relative z-10">
+            <!-- Card 1: SOLO (Cuphead Red Card) -->
+            <button onclick="GameApp.startMatch('solo')" class="equip-card rounded-2xl p-4 md:p-5 flex flex-col justify-between text-left group bg-[#df614f]">
+                <div class="card-inner-border rounded-xl p-3 h-full flex flex-col justify-between bg-[#e5705e]">
+                    <div class="flex justify-between items-start">
+                        <span class="font-['Henny_Penny'] text-lg md:text-2xl text-[#fdf5e2] tracking-wider">Cuphead</span>
+                        <span class="font-['Shrikhand'] text-lg text-[#fdf5e2]">1P</span>
+                    </div>
+
+                    <!-- Circular Ink Portrait -->
+                    <div class="w-24 h-24 md:w-32 md:h-32 rounded-full border-3 border-[#2b221b] bg-[#cbb38f] mx-auto my-2 overflow-hidden flex items-center justify-center shadow-inner relative">
+                        <canvas id="cuphead-portrait-canvas" width="120" height="120"></canvas>
+                    </div>
+
+                    <!-- 4 Equip Slot Icons (Shot-A, Shot-B, Super, Charm) -->
+                    <div class="grid grid-cols-4 gap-1.5 my-1 text-center">
+                        <div class="bg-[#e8dbc3] border-2 border-[#2b221b] rounded-full w-8 h-8 md:w-9 md:h-9 mx-auto flex items-center justify-center text-xs font-bold shadow-sm">🔫</div>
+                        <div class="bg-[#d2c2a6] border-2 border-[#2b221b] border-dashed rounded-full w-8 h-8 md:w-9 md:h-9 mx-auto flex items-center justify-center text-[10px] text-gray-500 font-bold">-</div>
+                        <div class="bg-[#ffd32a] border-2 border-[#2b221b] rounded-full w-8 h-8 md:w-9 md:h-9 mx-auto flex items-center justify-center text-xs font-['Shrikhand'] text-[#2b221b] shadow-sm">I</div>
+                        <div class="bg-[#d2c2a6] border-2 border-[#2b221b] border-dashed rounded-full w-8 h-8 md:w-9 md:h-9 mx-auto flex items-center justify-center text-[10px] text-gray-500 font-bold">-</div>
+                    </div>
+
+                    <div class="bg-[#e8dbc3] border-2 border-[#2b221b] py-1.5 px-3 rounded-lg text-center shadow-sm">
+                        <h2 class="text-base md:text-xl font-['Shrikhand'] text-[#2b221b] leading-tight">SOLO RUN</h2>
+                        <span class="text-[10px] md:text-xs font-bold text-[#685342]">БОСС-ФАЙТ 1 ИГРОК</span>
+                    </div>
+                </div>
+            </button>
+
+            <!-- Card 2: DUO (Mugman Green Card) -->
+            <button onclick="GameApp.openDuoModal()" class="equip-card rounded-2xl p-4 md:p-5 flex flex-col justify-between text-left group bg-[#88ad62]">
+                <div class="card-inner-border rounded-xl p-3 h-full flex flex-col justify-between bg-[#95bb6e]">
+                    <div class="flex justify-between items-start">
+                        <span class="font-['Henny_Penny'] text-lg md:text-2xl text-[#fdf5e2] tracking-wider">Mugman</span>
+                        <span class="font-['Shrikhand'] text-lg text-[#fdf5e2]">2P</span>
+                    </div>
+
+                    <!-- Circular Ink Portrait -->
+                    <div class="w-24 h-24 md:w-32 md:h-32 rounded-full border-3 border-[#2b221b] bg-[#cbb38f] mx-auto my-2 overflow-hidden flex items-center justify-center shadow-inner relative">
+                        <canvas id="mugman-portrait-canvas" width="120" height="120"></canvas>
+                    </div>
+
+                    <!-- 4 Equip Slot Icons -->
+                    <div class="grid grid-cols-4 gap-1.5 my-1 text-center">
+                        <div class="bg-[#e8dbc3] border-2 border-[#2b221b] rounded-full w-8 h-8 md:w-9 md:h-9 mx-auto flex items-center justify-center text-xs font-bold shadow-sm">🔫</div>
+                        <div class="bg-[#e8dbc3] border-2 border-[#2b221b] rounded-full w-8 h-8 md:w-9 md:h-9 mx-auto flex items-center justify-center text-xs font-bold shadow-sm">💣</div>
+                        <div class="bg-[#ffd32a] border-2 border-[#2b221b] rounded-full w-8 h-8 md:w-9 md:h-9 mx-auto flex items-center justify-center text-xs font-['Shrikhand'] text-[#2b221b] shadow-sm">I</div>
+                        <div class="bg-[#d2c2a6] border-2 border-[#2b221b] border-dashed rounded-full w-8 h-8 md:w-9 md:h-9 mx-auto flex items-center justify-center text-[10px] text-gray-500 font-bold">-</div>
+                    </div>
+
+                    <div class="bg-[#e8dbc3] border-2 border-[#2b221b] py-1.5 px-3 rounded-lg text-center shadow-sm">
+                        <h2 class="text-base md:text-xl font-['Shrikhand'] text-[#2b221b] leading-tight">DUO CO-OP</h2>
+                        <span class="text-[10px] md:text-xs font-bold text-[#685342]">КОД КОМНАТЫ / ДРУГ</span>
+                    </div>
+                </div>
+            </button>
+
+            <!-- Card 3: SHOP (Porkrind's Emporium Vintage Card) -->
+            <button onclick="GameApp.openShopModal()" class="equip-card rounded-2xl p-4 md:p-5 flex flex-col justify-between text-left group bg-[#be895b]">
+                <div class="card-inner-border rounded-xl p-3 h-full flex flex-col justify-between bg-[#cfa073]">
+                    <div class="flex justify-between items-start">
+                        <span class="font-['Henny_Penny'] text-lg md:text-2xl text-[#fdf5e2] tracking-wider">Shop</span>
+                        <span class="font-['Shrikhand'] text-lg text-[#ffd32a]">★</span>
+                    </div>
+
+                    <!-- Circular Ink Portrait -->
+                    <div class="w-24 h-24 md:w-32 md:h-32 rounded-full border-3 border-[#2b221b] bg-[#cbb38f] mx-auto my-2 overflow-hidden flex items-center justify-center shadow-inner relative">
+                        <div class="text-4xl md:text-5xl">🐽</div>
+                    </div>
+
+                    <!-- Price & Stock Info -->
+                    <div class="flex items-center justify-center gap-1.5 my-1 text-center bg-[#2b221b] text-[#ffd32a] py-1 rounded-md font-['Shrikhand'] text-xs">
+                        <span>4 ОРУЖИЯ В НАЛИЧИИ</span>
+                    </div>
+
+                    <div class="bg-[#e8dbc3] border-2 border-[#2b221b] py-1.5 px-3 rounded-lg text-center shadow-sm">
+                        <h2 class="text-base md:text-xl font-['Shrikhand'] text-[#2b221b] leading-tight">АРСЕНАЛ</h2>
+                        <span class="text-[10px] md:text-xs font-bold text-[#685342]">ОРУЖИЕ ЗА МОНЕТЫ</span>
+                    </div>
+                </div>
+            </button>
+        </div>
+
+        <!-- Vintage Footer Ribbon -->
+        <div class="flex justify-between items-center text-xs md:text-sm font-['Kalam'] font-bold text-[#e8dbc3] opacity-80 px-4">
+            <span>НАГРАДА: +1 МОНЕТА ЗА ПОБЕДУ НАД БОССОМ!</span>
+            <button onclick="GameApp.testAddCoins()" class="underline text-[#ffd32a] hover:text-white">Тест: +15 монет</button>
+        </div>
+    </div>
+
+    <!-- ================= DUO CO-OP MODAL ================= -->
+    <div id="duo-modal" class="hidden absolute inset-0 z-40 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="equip-card bg-[#e8dbc3] rounded-3xl max-w-lg w-full p-6 text-[#2b221b] shadow-2xl">
+            <div class="flex justify-between items-center mb-3">
+                <h2 class="text-2xl md:text-3xl font-['Shrikhand']">ДУО КООПЕРАТИВ</h2>
+                <button onclick="GameApp.closeModals()" class="w-8 h-8 rounded-full border-2 border-[#2b221b] bg-[#e05244] text-white font-bold text-sm">✕</button>
+            </div>
+            <p class="text-sm font-bold text-[#634e3e] mb-4">В кооперативе к тебе присоединяется второй боец — Магмен (синий стакан)! Он стреляет параллельно с тобой и прикрывает спину.</p>
+            
+            <div class="grid grid-cols-2 gap-3 mb-5">
+                <div class="border-2 border-[#2b221b] bg-[#fdf5e2] p-3 rounded-2xl text-center">
+                    <span class="text-xs font-bold uppercase text-[#634e3e]">Твой код комнаты</span>
+                    <div id="duo-room-code" class="text-3xl font-['Shrikhand'] text-[#3b82f6] tracking-widest my-1">7391</div>
+                    <button onclick="GameApp.copyCode()" class="text-xs font-bold underline">Скопировать</button>
+                </div>
+                <div class="border-2 border-[#2b221b] bg-[#fdf5e2] p-3 rounded-2xl text-center flex flex-col justify-between">
+                    <span class="text-xs font-bold uppercase text-[#634e3e]">Ввести код друга</span>
+                    <input id="input-friend-code" type="text" placeholder="КОД" maxlength="6" class="w-full text-center font-['Shrikhand'] text-lg uppercase bg-white border border-[#2b221b] rounded-lg py-1 outline-none">
+                </div>
+            </div>
+
+            <button onclick="GameApp.confirmDuoStart()" class="w-full py-3 bg-[#88ad62] border-3 border-[#2b221b] rounded-xl text-white font-['Shrikhand'] text-lg shadow-[3px_4px_0_#2b221b] active:translate-y-1">
+                ВСТУПИТЬ В БОЙ ВДВОЕМ!
+            </button>
+        </div>
+    </div>
+
+    <!-- ================= SHOP MODAL ================= -->
+    <div id="shop-modal" class="hidden absolute inset-0 z-40 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="equip-card bg-[#e8dbc3] rounded-3xl max-w-4xl w-full p-5 md:p-6 text-[#2b221b] shadow-2xl max-h-[92vh] flex flex-col">
+            <div class="flex justify-between items-center mb-3">
+                <div>
+                    <h2 class="text-2xl md:text-3xl font-['Shrikhand']">ЛАВКА ПОРКРИНДА</h2>
+                    <p class="text-xs font-bold text-[#634e3e]">Покупай оружие с уникальными характеристиками и сбалансированными EX-ударами!</p>
+                </div>
+                <div class="flex items-center gap-3">
+                    <div class="bg-[#ffd32a] border-2 border-[#2b221b] px-3.5 py-1 rounded-xl font-['Shrikhand'] text-base shadow-sm">
+                        МОНЕТЫ: <span id="shop-coins-val">0</span>
+                    </div>
+                    <button onclick="GameApp.closeModals()" class="w-8 h-8 rounded-full border-2 border-[#2b221b] bg-[#e05244] text-white font-bold text-sm">✕</button>
+                </div>
+            </div>
+
+            <!-- Weapon Cards Grid -->
+            <div id="shop-list-container" class="grid grid-cols-2 md:grid-cols-4 gap-3 overflow-y-auto p-1">
+                <!-- Injected via JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= HUD & TOUCH CONTROLS ================= -->
+    <div id="hud-controls-layer" class="hidden absolute inset-0 pointer-events-none z-20">
+        <!-- Top Banner: HP Badge + EX Card Meter + Pause -->
+        <div class="flex justify-between items-start p-4 md:p-5">
+            <!-- Left: Retro Yellow HP Badge + EX Cards -->
+            <div class="flex flex-col gap-1.5 pointer-events-auto">
+                <div class="flex items-center gap-2">
+                    <div id="hud-hp-badge" class="bg-[#ffd32a] border-3 border-[#2b221b] text-[#2b221b] font-['Shrikhand'] text-lg md:text-xl px-4 py-0.5 rounded-lg shadow-[3px_3px_0_#2b221b]">
+                        HP. 3
+                    </div>
+                    <div id="hud-weapon-badge" class="bg-[#e8dbc3] border-2 border-[#2b221b] text-[#2b221b] font-['Shrikhand'] text-xs md:text-sm px-3 py-1 rounded-md shadow-sm">
+                        PEASHOOTER
+                    </div>
+                    <div id="hud-duo-badge" class="hidden bg-[#3b82f6] border-2 border-[#2b221b] text-white font-['Shrikhand'] text-xs px-2.5 py-1 rounded-md shadow-sm">
+                        2P MUGMAN
+                    </div>
+                </div>
+
+                <!-- 5 Vintage Playing Cards for Super / EX Moves -->
+                <div class="flex items-center gap-1.5" id="hud-ex-meter">
+                    <!-- 5 EX Card slots -->
+                </div>
+            </div>
+
+            <!-- Center: Pause -->
+            <button onclick="GameApp.togglePause()" class="pointer-events-auto vintage-btn w-11 h-11 rounded-xl flex items-center justify-center text-xl shadow-[2px_3px_0_#2b221b]">
+                ||
+            </button>
+
+            <!-- Right: Boss Phase & Minimalist HP -->
+            <div class="flex flex-col items-end pointer-events-auto">
+                <span id="hud-boss-title" class="font-['Shrikhand'] text-xs md:text-sm bg-[#e8dbc3] border-2 border-[#2b221b] px-3 py-0.5 rounded-lg shadow-sm">
+                    ФАЗА 1: СЭЛ КАРТОШКА
+                </span>
+                <div class="w-36 md:w-52 h-3.5 bg-[#2b221b] border-2 border-[#e8dbc3] rounded-full mt-1.5 overflow-hidden shadow-inner p-0.5">
+                    <div id="hud-boss-fill" class="h-full bg-[#e05244] rounded-full transition-all duration-75" style="width: 100%"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Left D-Pad: Authentic 4 Directional Touch Cluster -->
+        <div id="touch-dpad" class="absolute bottom-4 left-4 md:bottom-8 md:left-8 w-48 h-48 md:w-56 md:h-56 pointer-events-auto grid grid-cols-3 grid-rows-3 gap-1">
+            <div></div>
+            <button data-key="up" class="vintage-btn dpad-cell rounded-t-2xl text-2xl flex items-center justify-center">▲</button>
+            <div></div>
+            <button data-key="left" class="vintage-btn dpad-cell rounded-l-2xl text-2xl flex items-center justify-center">◀</button>
+            <div class="border-2 border-dashed border-[#2b221b]/40 rounded-full m-2 pointer-events-none"></div>
+            <button data-key="right" class="vintage-btn dpad-cell rounded-r-2xl text-2xl flex items-center justify-center">▶</button>
+            <div></div>
+            <button data-key="down" class="vintage-btn dpad-cell rounded-b-2xl text-2xl flex items-center justify-center">▼</button>
+            <div></div>
+        </div>
+
+        <!-- Right Action Cluster: Jump (Parry), Shoot (Double-tap auto-fire), Dash, EX, Lock -->
+        <div class="absolute bottom-4 right-4 md:bottom-8 md:right-8 w-60 h-52 md:w-68 md:h-60 pointer-events-auto">
+            <!-- Big Jump & Parry Button (Bottom Right) -->
+            <button id="btn-jump" class="vintage-btn absolute bottom-0 right-0 w-24 h-24 md:w-28 md:h-28 rounded-full flex flex-col items-center justify-center shadow-[3px_4px_0_#2b221b]">
+                <span class="text-3xl leading-none">▲</span>
+                <span class="text-[9px] font-['Shrikhand'] uppercase tracking-wider mt-1">JUMP/PARRY</span>
+            </button>
+
+            <!-- Shoot Button: Regular Fire / Double-Tap Auto-Fire -->
+            <button id="btn-shoot" class="vintage-btn absolute bottom-3 right-28 md:right-32 w-16 h-16 md:w-18 md:h-18 rounded-full flex flex-col items-center justify-center shadow-[3px_4px_0_#2b221b]">
+                <span class="text-xl leading-none">●</span>
+                <span id="shoot-lbl" class="text-[8px] font-['Shrikhand'] uppercase">FIRE</span>
+            </button>
+
+            <!-- Dash Button (Above Jump) -->
+            <button id="btn-dash" class="vintage-btn absolute bottom-28 right-2 md:bottom-32 w-16 h-16 rounded-full flex flex-col items-center justify-center shadow-[3px_4px_0_#2b221b]">
+                <span class="text-lg leading-none">💨</span>
+                <span class="text-[8px] font-['Shrikhand'] uppercase">DASH</span>
+            </button>
+
+            <!-- EX Move Button (Top Center of Right Cluster) -->
+            <button id="btn-ex" class="vintage-btn absolute bottom-36 right-20 md:bottom-40 md:right-24 w-15 h-15 rounded-full flex flex-col items-center justify-center border-2 border-[#ffd32a] bg-[#ffd32a]/80 shadow-[3px_4px_0_#2b221b]">
+                <span class="text-lg leading-none text-[#2b221b]">★</span>
+                <span class="text-[8px] font-['Shrikhand'] text-[#2b221b]">EX MOVE</span>
+            </button>
+
+            <!-- Lock Aim Button (Far Left of Action Cluster) -->
+            <button id="btn-lock" class="vintage-btn absolute bottom-4 right-48 md:right-52 w-13 h-13 rounded-full flex flex-col items-center justify-center shadow-[2px_3px_0_#2b221b]">
+                <span class="text-sm leading-none">🔒</span>
+                <span class="text-[7px] font-['Shrikhand'] uppercase">LOCK</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- ================= PAUSE / RESULT MODAL ================= -->
+    <div id="game-modal" class="hidden absolute inset-0 z-40 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="equip-card bg-[#e8dbc3] rounded-3xl max-w-md w-full p-6 text-center text-[#2b221b] shadow-2xl">
+            <span id="modal-tag" class="inline-block px-3 py-0.5 rounded-md font-['Shrikhand'] text-xs uppercase bg-[#ffd32a] border border-[#2b221b] mb-2">ПОБЕДА</span>
+            <h2 id="modal-header" class="text-4xl md:text-5xl font-['Shrikhand'] tracking-wider mb-2">KNOCKOUT!</h2>
+            <p id="modal-desc" class="text-sm font-bold text-[#634e3e] mb-6">Босс повержен! Ты получаешь +1 золотую монету.</p>
+            <div class="flex gap-3">
+                <button onclick="GameApp.toMenu()" class="flex-1 py-3 bg-[#d2c2a6] border-2 border-[#2b221b] rounded-xl font-['Shrikhand'] text-base shadow-[2px_3px_0_#2b221b] active:translate-y-1">
+                    В МЕНЮ
+                </button>
+                <button id="modal-action-btn" onclick="GameApp.restartCurrent()" class="flex-1 py-3 bg-[#e05244] border-2 border-[#2b221b] text-white font-['Shrikhand'] text-base shadow-[2px_3px_0_#2b221b] active:translate-y-1">
+                    ЕЩЕ РАЗ
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+/**
+ * CUPHEAD VINTAGE 1930s RUBBER-HOSE BOSS BATTLE
+ * Single-file standalone HTML5 Canvas implementation
+ * Pure procedural inked vector drawing + Authentic Cartoon Animation
+ */
+
+// 1930s Web Audio Synthesizer (Retro Jazz Chords, Clicks, Lasers & Explosions)
+class SoundFX {
+    constructor() {
+        this.ctx = null;
+    }
+    init() {
+        if (!this.ctx) {
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            this.ctx = new AudioContext();
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+            this.ctx.resume();
+        }
+    }
+    playTone(freq, type = 'sine', duration = 0.1, vol = 0.15) {
+        if (!this.ctx) return;
+        try {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+            gain.gain.setValueAtTime(vol, this.ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start();
+            osc.stop(this.ctx.currentTime + duration);
+        } catch (e) {}
+    }
+    shoot(type) {
+        this.init();
+        if (type === 'peashooter') this.playTone(520, 'triangle', 0.08, 0.12);
+        else if (type === 'spread') this.playTone(240, 'sawtooth', 0.1, 0.14);
+        else if (type === 'chaser') this.playTone(740, 'sine', 0.07, 0.1);
+        else if (type === 'lobber') this.playTone(180, 'square', 0.14, 0.16);
+    }
+    jump() {
+        this.init();
+        this.playTone(320, 'sine', 0.12, 0.18);
+    }
+    parry() {
+        this.init();
+        // Bright metallic slap ding!
+        this.playTone(880, 'triangle', 0.22, 0.3);
+        setTimeout(() => this.playTone(1320, 'sine', 0.25, 0.25), 50);
+    }
+    dash() {
+        this.init();
+        this.playTone(190, 'triangle', 0.15, 0.22);
+    }
+    bossHit() {
+        this.init();
+        this.playTone(110, 'square', 0.06, 0.1);
+    }
+    bossSpit() {
+        this.init();
+        this.playTone(140, 'sawtooth', 0.18, 0.25);
+    }
+    exShot() {
+        this.init();
+        this.playTone(160, 'sawtooth', 0.35, 0.35);
+        setTimeout(() => this.playTone(320, 'square', 0.25, 0.3), 80);
+    }
+    playerHurt() {
+        this.init();
+        this.playTone(90, 'sawtooth', 0.3, 0.4);
+    }
+    victoryFanfare() {
+        this.init();
+        const notes = [261.63, 329.63, 392.00, 523.25];
+        notes.forEach((n, idx) => {
+            setTimeout(() => this.playTone(n, 'triangle', 0.3, 0.25), idx * 130);
+        });
+    }
+}
+const SFX = new SoundFX();
+
+// Weapon Manifest & Balance
+const WEAPONS = {
+    peashooter: {
+        id: 'peashooter',
+        name: 'Peashooter',
+        ruName: 'Горохострел',
+        bulletColor: '#38b6ff',
+        price: 0,
+        fireRate: 0.11,
+        damage: 10,
+        speed: 1050,
+        desc: 'Классические прямые голубые лазеры. Идеальный баланс.',
+        exDesc: 'Мега-сгусток синего пламени (около 1/10 HP босса).'
+    },
+    spread: {
+        id: 'spread',
+        name: 'Spread',
+        ruName: 'Разброс',
+        bulletColor: '#ff4757',
+        price: 15,
+        fireRate: 0.17,
+        damage: 7, // x5 spikes = 35 total if point blank
+        speed: 880,
+        desc: 'Конус из 5 красных пирамидок. Колоссальный урон вблизи.',
+        exDesc: 'Восьмиствольный круговой залп гигантскими шипами.'
+    },
+    chaser: {
+        id: 'chaser',
+        name: 'Chaser',
+        ruName: 'Преследователь',
+        bulletColor: '#2ed573',
+        price: 20,
+        fireRate: 0.13,
+        damage: 6.2,
+        speed: 720,
+        desc: 'Зеленые звездочки сами наводятся на врагов и морковок.',
+        exDesc: 'Щит хаоса: 4 орбитальные звезды защищают героя.'
+    },
+    lobber: {
+        id: 'lobber',
+        name: 'Lobber',
+        ruName: 'Метатель',
+        bulletColor: '#a55eea',
+        price: 30,
+        fireRate: 0.35,
+        damage: 29,
+        speed: 680,
+        desc: 'Прыгающие фиолетовые шары по навесной дуге.',
+        exDesc: 'Тяжелый мега-шар со взрывной волной по площади.'
+    }
+};
+
+// Haptic Telegram Helper
+function sendTelegramHaptic(type = 'light') {
+    try {
+        if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.HapticFeedback) {
+            if (type === 'success' || type === 'warning' || type === 'error') {
+                window.Telegram.WebApp.HapticFeedback.notificationOccurred(type);
+            } else {
+                window.Telegram.WebApp.HapticFeedback.impactOccurred(type);
+            }
+        }
+    } catch (e) {}
+}
+
+class CupheadGame {
+    constructor() {
+        this.canvas = document.getElementById('gameCanvas');
+        this.ctx = this.canvas.getContext('2d', { alpha: false });
+        this.W = 1280;
+        this.H = 720;
+        this.groundY = 600;
+
+        // Persistent Save
+        this.coins = parseInt(localStorage.getItem('cup_coins') || '0', 10);
+        this.ownedWeapons = JSON.parse(localStorage.getItem('cup_owned') || '["peashooter"]');
+        this.equippedWeapon = localStorage.getItem('cup_equipped') || 'peashooter';
+
+        // State & Mode
+        this.state = 'MENU'; // MENU, PLAYING, PAUSED, OVER
+        this.mode = 'solo';  // solo, duo
+        this.lastTime = performance.now();
+        this.globalAnimTimer = 0;
+
+        // Controls State
+        this.input = {
+            left: false,
+            right: false,
+            up: false,
+            down: false,
+            shoot: false,
+            autoFire: false,
+            lock: false
+        };
+        this.lastShootTapTime = 0;
+
+        // Entities
+        this.player = null;
+        this.duoPartner = null;
+        this.boss = null;
+        this.horaceRadish = null;
+        this.playerBullets = [];
+        this.enemyProjectiles = [];
+        this.particles = [];
+        this.smokePuffs = [];
+        this.floatingTexts = [];
+        this.orbitals = [];
+
+        // Vintage Rubber-Hose Background Details
+        this.gardenFence = [];
+        for (let x = -20; x < this.W + 60; x += 55) {
+            this.gardenFence.push({ x, h: 50 + (Math.sin(x) * 12) });
+        }
+
+        this.initTelegram();
+        this.bindInputEvents();
+        this.renderMenuCardsPortraits();
+        this.refreshMenuStats();
+
+        // Start delta-time 120 FPS game loop
+        requestAnimationFrame((t) => this.gameLoop(t));
+    }
+
+    initTelegram() {
+        try {
+            if (window.Telegram && window.Telegram.WebApp) {
+                window.Telegram.WebApp.ready();
+                window.Telegram.WebApp.expand();
+            }
+        } catch (e) {}
+    }
+
+    save() {
+        localStorage.setItem('cup_coins', String(this.coins));
+        localStorage.setItem('cup_owned', JSON.stringify(this.ownedWeapons));
+        localStorage.setItem('cup_equipped', this.equippedWeapon);
+        this.refreshMenuStats();
+    }
+
+    testAddCoins() {
+        this.coins += 15;
+        this.save();
+        sendTelegramHaptic('success');
+    }
+
+    refreshMenuStats() {
+        document.getElementById('coin-counter').textContent = this.coins;
+        document.getElementById('shop-coins-val').textContent = this.coins;
+        document.getElementById('menu-weapon-lbl').textContent = WEAPONS[this.equippedWeapon].name.toUpperCase();
+        this.renderShopUI();
+    }
+
+    renderShopUI() {
+        const container = document.getElementById('shop-list-container');
+        container.innerHTML = '';
+        Object.values(WEAPONS).forEach(w => {
+            const owned = this.ownedWeapons.includes(w.id);
+            const equipped = this.equippedWeapon === w.id;
+            const card = document.createElement('div');
+            card.className = `equip-card rounded-2xl p-3 flex flex-col justify-between ${equipped ? 'border-4 border-[#2b221b] bg-[#ffd32a]' : 'bg-[#fdf5e2]'}`;
+            card.innerHTML = `
+                <div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-['Shrikhand'] text-[#634e3e] uppercase">${w.name}</span>
+                        <div class="w-6 h-6 rounded-full border border-[#2b221b]" style="background:${w.bulletColor}"></div>
+                    </div>
+                    <h3 class="font-['Shrikhand'] text-base md:text-lg text-[#2b221b] mt-0.5 leading-tight">${w.ruName}</h3>
+                    <p class="text-[11px] font-bold text-[#4a3b30] mt-1 leading-snug">${w.desc}</p>
+                    <div class="bg-[#2b221b]/10 border border-[#2b221b]/20 p-1.5 rounded-lg mt-2 text-[10px] font-bold text-[#2b221b]">
+                        EX: ${w.exDesc}
+                    </div>
+                </div>
+                <div class="mt-3">
+                    ${equipped
+                        ? `<button class="w-full py-2 bg-[#2b221b] text-white font-['Shrikhand'] text-xs rounded-xl cursor-default">В РУКАХ</button>`
+                        : owned
+                        ? `<button onclick="GameApp.equipWeapon('${w.id}')" class="w-full py-2 bg-[#88ad62] border-2 border-[#2b221b] text-white font-['Shrikhand'] text-xs rounded-xl shadow-sm active:translate-y-0.5">ВЫБРАТЬ</button>`
+                        : `<button onclick="GameApp.buyWeapon('${w.id}')" class="w-full py-2 bg-[#e05244] border-2 border-[#2b221b] text-white font-['Shrikhand'] text-xs rounded-xl shadow-sm active:translate-y-0.5">КУПИТЬ (${w.price} ●)</button>`
+                    }
+                </div>
+            `;
+            container.appendChild(card);
+        });
+    }
+
+    buyWeapon(id) {
+        const w = WEAPONS[id];
+        if (!w || this.ownedWeapons.includes(id)) return;
+        if (this.coins >= w.price) {
+            this.coins -= w.price;
+            this.ownedWeapons.push(id);
+            this.equippedWeapon = id;
+            sendTelegramHaptic('success');
+            SFX.victoryFanfare();
+            this.save();
+        } else {
+            sendTelegramHaptic('error');
+            alert('Не хватает монет! Побеждай боссов (+1 монета) или жми "Тест: +15 монет".');
+        }
+    }
+
+    equipWeapon(id) {
+        if (this.ownedWeapons.includes(id)) {
+            this.equippedWeapon = id;
+            sendTelegramHaptic('light');
+            this.save();
+        }
+    }
+
+    renderMenuCardsPortraits() {
+        // Draw Cuphead in Menu Card
+        const c1 = document.getElementById('cuphead-portrait-canvas');
+        if (c1) {
+            const ctx1 = c1.getContext('2d');
+            ctx1.save();
+            ctx1.scale(0.85, 0.85);
+            ctx1.translate(70, 115);
+            this.drawCartoonCuphead(ctx1, 0, 0, 1, 0, false, false, 0, '#e05244', true);
+            ctx1.restore();
+        }
+
+        // Draw Mugman in Menu Card
+        const c2 = document.getElementById('mugman-portrait-canvas');
+        if (c2) {
+            const ctx2 = c2.getContext('2d');
+            ctx2.save();
+            ctx2.scale(0.85, 0.85);
+            ctx2.translate(70, 115);
+            this.drawCartoonCuphead(ctx2, 0, 0, 1, 0, false, false, 0, '#3b82f6', true);
+            ctx2.restore();
+        }
+    }
+
+    openDuoModal() {
+        document.getElementById('duo-modal').classList.remove('hidden');
+        document.getElementById('duo-room-code').textContent = Math.floor(1000 + Math.random() * 9000);
+    }
+
+    openShopModal() {
+        document.getElementById('shop-modal').classList.remove('hidden');
+        this.refreshMenuStats();
+    }
+
+    closeModals() {
+        document.getElementById('duo-modal').classList.add('hidden');
+        document.getElementById('shop-modal').classList.add('hidden');
+    }
+
+    copyCode() {
+        const code = document.getElementById('duo-room-code').textContent;
+        navigator.clipboard?.writeText(code);
+        sendTelegramHaptic('light');
+    }
+
+    confirmDuoStart() {
+        this.closeModals();
+        this.startMatch('duo');
+    }
+
+    /* ================= TOUCH & KEYBOARD CONTROLS ================= */
+    bindInputEvents() {
+        // D-Pad Touch Listeners
+        const dpad = document.getElementById('touch-dpad');
+        const dpadButtons = dpad.querySelectorAll('.dpad-cell');
+
+        const updateDpadState = (e) => {
+            e.preventDefault();
+            this.input.left = false;
+            this.input.right = false;
+            this.input.up = false;
+            this.input.down = false;
+            dpadButtons.forEach(b => b.classList.remove('active'));
+
+            for (let i = 0; i < e.touches.length; i++) {
+                const touch = e.touches[i];
+                const target = document.elementFromPoint(touch.clientX, touch.clientY);
+                if (target && target.dataset && target.dataset.key) {
+                    const key = target.dataset.key;
+                    target.classList.add('active');
+                    if (key === 'left') this.input.left = true;
+                    if (key === 'right') this.input.right = true;
+                    if (key === 'up') this.input.up = true;
+                    if (key === 'down') this.input.down = true;
+                }
+            }
+        };
+
+        dpad.addEventListener('touchstart', updateDpadState, { passive: false });
+        dpad.addEventListener('touchmove', updateDpadState, { passive: false });
+        dpad.addEventListener('touchend', updateDpadState, { passive: false });
+        dpad.addEventListener('touchcancel', updateDpadState, { passive: false });
+
+        // Big Jump / Double-Tap Parry
+        const btnJump = document.getElementById('btn-jump');
+        btnJump.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            btnJump.classList.add('active');
+            this.handleJumpTap();
+        }, { passive: false });
+        btnJump.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            btnJump.classList.remove('active');
+        }, { passive: false });
+
+        // Shoot Button (Tap to fire, Double-Tap for Auto-Fire Lock!)
+        const btnShoot = document.getElementById('btn-shoot');
+        btnShoot.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            const now = performance.now();
+            if (now - this.lastShootTapTime < 280) {
+                // Double tap detected: Toggle Auto-Fire!
+                this.input.autoFire = !this.input.autoFire;
+                btnShoot.classList.toggle('auto-fire-on', this.input.autoFire);
+                document.getElementById('shoot-lbl').textContent = this.input.autoFire ? 'AUTO ON' : 'FIRE';
+                sendTelegramHaptic('warning');
+            } else {
+                this.input.shoot = true;
+                btnShoot.classList.add('active');
+            }
+            this.lastShootTapTime = now;
+        }, { passive: false });
+
+        btnShoot.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            this.input.shoot = false;
+            btnShoot.classList.remove('active');
+        }, { passive: false });
+
+        // Dash Button
+        const btnDash = document.getElementById('btn-dash');
+        btnDash.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            btnDash.classList.add('active');
+            this.handleDash();
+        }, { passive: false });
+        btnDash.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            btnDash.classList.remove('active');
+        }, { passive: false });
+
+        // EX / Super Button
+        const btnEx = document.getElementById('btn-ex');
+        btnEx.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            btnEx.classList.add('active');
+            this.handleExMove();
+        }, { passive: false });
+        btnEx.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            btnEx.classList.remove('active');
+        }, { passive: false });
+
+        // Lock Aim Button
+        const btnLock = document.getElementById('btn-lock');
+        btnLock.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            this.input.lock = !this.input.lock;
+            btnLock.classList.toggle('locked-mode', this.input.lock);
+            sendTelegramHaptic('light');
+        }, { passive: false });
+
+        // Desktop Fallback Keyboard
+        window.addEventListener('keydown', (e) => {
+            if (this.state !== 'PLAYING') return;
+            if (e.code === 'KeyA' || e.code === 'ArrowLeft') this.input.left = true;
+            if (e.code === 'KeyD' || e.code === 'ArrowRight') this.input.right = true;
+            if (e.code === 'KeyW' || e.code === 'ArrowUp') this.input.up = true;
+            if (e.code === 'KeyS' || e.code === 'ArrowDown') this.input.down = true;
+            if (e.code === 'Space' || e.code === 'KeyZ') {
+                if (!e.repeat) this.handleJumpTap();
+            }
+            if (e.code === 'KeyX' || e.code === 'KeyJ') this.input.shoot = true;
+            if (e.code === 'KeyC' || e.code === 'KeyK') {
+                if (!e.repeat) this.handleDash();
+            }
+            if (e.code === 'KeyV' || e.code === 'KeyE') {
+                if (!e.repeat) this.handleExMove();
+            }
+            if (e.code === 'KeyL' || e.code === 'ShiftLeft') this.input.lock = true;
+        });
+
+        window.addEventListener('keyup', (e) => {
+            if (e.code === 'KeyA' || e.code === 'ArrowLeft') this.input.left = false;
+            if (e.code === 'KeyD' || e.code === 'ArrowRight') this.input.right = false;
+            if (e.code === 'KeyW' || e.code === 'ArrowUp') this.input.up = false;
+            if (e.code === 'KeyS' || e.code === 'ArrowDown') this.input.down = false;
+            if (e.code === 'KeyX' || e.code === 'KeyJ') this.input.shoot = false;
+            if (e.code === 'KeyL' || e.code === 'ShiftLeft') this.input.lock = false;
+        });
+    }
+
+    /* ================= MATCH LOGIC ================= */
+    startMatch(mode = 'solo') {
+        SFX.init();
+        this.mode = mode;
+        this.state = 'PLAYING';
+        document.getElementById('menu-screen').classList.add('hidden');
+        document.getElementById('game-modal').classList.add('hidden');
+        document.getElementById('hud-controls-layer').classList.remove('hidden');
+        document.getElementById('hud-duo-badge').classList.toggle('hidden', mode !== 'duo');
+        document.getElementById('hud-weapon-badge').textContent = WEAPONS[this.equippedWeapon].name.toUpperCase();
+
+        this.initEntities();
+        this.updateHUD();
+        sendTelegramHaptic('medium');
+    }
+
+    restartCurrent() {
+        this.startMatch(this.mode);
+    }
+
+    toMenu() {
+        this.state = 'MENU';
+        document.getElementById('hud-controls-layer').classList.add('hidden');
+        document.getElementById('game-modal').classList.add('hidden');
+        document.getElementById('menu-screen').classList.remove('hidden');
+        this.refreshMenuStats();
+    }
+
+    togglePause() {
+        if (this.state === 'PLAYING') {
+            this.state = 'PAUSED';
+            this.openModalUI('ПАУЗА', 'ПЕРЕРЫВ', 'Битва приостановлена. Готов продолжить?', 'ПРОДОЛЖИТЬ', () => {
+                this.state = 'PLAYING';
+                document.getElementById('game-modal').classList.add('hidden');
+            });
+        } else if (this.state === 'PAUSED') {
+            this.state = 'PLAYING';
+            document.getElementById('game-modal').classList.add('hidden');
+        }
+    }
+
+    openModalUI(tag, header, desc, actionText, actionFn) {
+        document.getElementById('modal-tag').textContent = tag;
+        document.getElementById('modal-header').textContent = header;
+        document.getElementById('modal-desc').textContent = desc;
+        const btn = document.getElementById('modal-action-btn');
+        btn.textContent = actionText;
+        btn.onclick = actionFn;
+        document.getElementById('game-modal').classList.remove('hidden');
+    }
+
+    initEntities() {
+        this.player = {
+            x: 230,
+            y: this.groundY,
+            vx: 0,
+            vy: 0,
+            w: 70,
+            h: 96,
+            facing: 1,
+            aimX: 1,
+            aimY: 0,
+            onGround: true,
+            crouching: false,
+            hp: 3,
+            invulnTimer: 0,
+            dashTimer: 0,
+            dashCooldown: 0,
+            parryTimer: 0,
+            canParryInAir: false,
+            energy: 0, // 0 to 500 (100 per card)
+            shootCooldown: 0,
+            runFrame: 0,
+            runTimer: 0,
+            isMoving: false,
+            bounceY: 0
+        };
+
+        if (this.mode === 'duo') {
+            this.duoPartner = {
+                x: 130,
+                y: this.groundY,
+                vy: 0,
+                facing: 1,
+                shootTimer: 0,
+                jumpTimer: 1.0,
+                bounceY: 0
+            };
+        } else {
+            this.duoPartner = null;
+        }
+
+        // Boss Phase 1: Giant Sal Spudder Potato
+        this.boss = {
+            phase: 1,
+            name: 'ФАЗА 1: СЭЛ КАРТОШКА',
+            hp: 520,
+            maxHp: 520,
+            x: 1040,
+            y: this.groundY,
+            w: 360,
+            h: 460,
+            // Telegraph Tell state
+            state: 'idle', // 'idle', 'windup', 'spitting'
+            timer: 1.0,
+            spitCount: 0,
+            hitFlash: 0,
+            squash: 1,
+            stretch: 1,
+            cheeksPuffed: false,
+            mouthOpen: 0,
+            // Ollie Bulb Pacifist secret
+            ollieDamaged: false,
+            ollieMercyTimer: 8.5,
+            // Carrot Phase
+            carrotAttackMode: 'missiles', // 'missiles' or 'rings'
+            carrotRingsShot: 0
+        };
+
+        this.horaceRadish = null;
+        this.playerBullets = [];
+        this.enemyProjectiles = [];
+        this.particles = [];
+        this.smokePuffs = [];
+        this.floatingTexts = [];
+        this.orbitals = [];
+    }
+
+    /* ================= ACTIONS ================= */
+    handleJumpTap() {
+        if (this.state !== 'PLAYING') return;
+        const p = this.player;
+
+        if (p.onGround) {
+            p.vy = -860;
+            p.onGround = false;
+            p.canParryInAir = true;
+            this.addSmokePuff(p.x, p.y, 1.2);
+            SFX.jump();
+            sendTelegramHaptic('light');
+        } else if (p.canParryInAir && p.parryTimer <= 0) {
+            // Second tap in mid-air activates 1930s Parry Slap Window!
+            p.parryTimer = 0.32;
+            p.canParryInAir = false;
+            this.executeParryCheck();
+            SFX.jump();
+            sendTelegramHaptic('medium');
+        }
+    }
+
+    handleDash() {
+        if (this.state !== 'PLAYING') return;
+        const p = this.player;
+        if (p.dashCooldown <= 0 && p.dashTimer <= 0) {
+            p.dashTimer = 0.22;
+            p.dashCooldown = 0.55;
+            p.vy = 0;
+            this.addSmokePuff(p.x, p.y - 45, 1.4);
+            SFX.dash();
+            sendTelegramHaptic('light');
+        }
+    }
+
+    handleExMove() {
+        if (this.state !== 'PLAYING') return;
+        const p = this.player;
+        if (p.energy < 100) {
+            this.addFloatingText(p.x, p.y - 110, 'НУЖНА EX-КАРТА!', '#ffd32a');
+            return;
+        }
+
+        // Spend 1 Super Card
+        p.energy -= 100;
+        SFX.exShot();
+        sendTelegramHaptic('heavy');
+        this.addFloatingText(p.x, p.y - 120, 'EX MOVE!', '#ffd32a');
+
+        const w = WEAPONS[this.equippedWeapon];
+        const sx = p.x + p.aimX * 45;
+        const sy = p.y - (p.crouching ? 25 : 52) + p.aimY * 25;
+
+        // Balanced EX Damage (~1/10 to 1/8 of boss total HP = around 45-55 damage)
+        if (w.id === 'peashooter') {
+            this.playerBullets.push({
+                type: 'ex_pea',
+                x: sx,
+                y: sy,
+                vx: p.aimX * 650,
+                vy: p.aimY * 650,
+                r: 40,
+                damage: 52, // Balanced! NOT an instant one-shot
+                color: '#38b6ff',
+                life: 2.5
+            });
+        } else if (w.id === 'spread') {
+            // 8-Way radial giant red spikes
+            for (let i = 0; i < 8; i++) {
+                const angle = (Math.PI * 2 * i) / 8;
+                this.playerBullets.push({
+                    type: 'ex_spread',
+                    x: p.x,
+                    y: p.y - 50,
+                    vx: Math.cos(angle) * 720,
+                    vy: Math.sin(angle) * 720,
+                    r: 18,
+                    damage: 26,
+                    color: '#ff4757',
+                    life: 1.1
+                });
+            }
+        } else if (w.id === 'chaser') {
+            // 4 Chaos Orbiting Stars
+            this.orbitals = [];
+            for (let i = 0; i < 4; i++) {
+                this.orbitals.push({
+                    angle: (Math.PI * 2 * i) / 4,
+                    radius: 95,
+                    damage: 20,
+                    life: 7.5
+                });
+            }
+        } else if (w.id === 'lobber') {
+            // Heavy purple mega bomb
+            this.playerBullets.push({
+                type: 'ex_lobber',
+                x: sx,
+                y: sy,
+                vx: p.facing * 520,
+                vy: -550,
+                gravity: 1600,
+                r: 36,
+                damage: 58,
+                color: '#a55eea',
+                life: 3.0
+            });
+        }
+
+        this.updateHUD();
+    }
+
+    executeParryCheck() {
+        const p = this.player;
+        const px = p.x;
+        const py = p.y - 48;
+        const parryDist = 95;
+
+        for (let i = this.enemyProjectiles.length - 1; i >= 0; i--) {
+            const ep = this.enemyProjectiles[i];
+            if (!ep.pink) continue;
+
+            const d = Math.hypot(ep.x - px, ep.y - py);
+            if (d <= parryDist + ep.r) {
+                // Successful Authentic Cuphead Parry!
+                this.enemyProjectiles.splice(i, 1);
+                p.vy = -860; // High bounce rebound
+                p.canParryInAir = true; // Can chain parries!
+                p.parryTimer = 0;
+                p.invulnTimer = 0.45;
+                p.energy = Math.min(500, p.energy + 100); // 1 Full Card!
+
+                this.addSmokePuff(ep.x, ep.y, 1.8);
+                this.addSparkParticles(ep.x, ep.y, '#ff66c4', 28, 420);
+                this.addFloatingText(px, py - 60, 'PARRY! +1 КАРТА', '#ff66c4');
+                SFX.parry();
+                sendTelegramHaptic('success');
+                this.updateHUD();
+                return true;
+            }
+        }
+        return false;
+    }
+
+    updateHUD() {
+        if (!this.player || !this.boss) return;
+        document.getElementById('hud-hp-badge').textContent = `HP. ${Math.max(0, this.player.hp)}`;
+        document.getElementById('hud-boss-title').textContent = this.boss.name;
+        const pct = Math.max(0, Math.min(100, (this.boss.hp / this.boss.maxHp) * 100));
+        document.getElementById('hud-boss-fill').style.width = `${pct}%`;
+
+        // Render 5 Retro Playing Cards
+        const meter = document.getElementById('hud-ex-meter');
+        meter.innerHTML = '';
+        for (let i = 0; i < 5; i++) {
+            const fill = Math.max(0, Math.min(1, (this.player.energy - i * 100) / 100));
+            const full = fill >= 1;
+            const card = document.createElement('div');
+            card.className = `w-6 h-8 rounded border-2 border-[#2b221b] bg-[#e8dbc3] relative overflow-hidden shadow-sm ${full ? 'scale-105 border-[#ffd32a]' : 'opacity-70'}`;
+            card.innerHTML = `
+                <div class="absolute bottom-0 left-0 right-0 bg-[#ffd32a]" style="height:${fill * 100}%"></div>
+                ${full ? '<div class="absolute inset-0 flex items-center justify-center font-[\'Shrikhand\'] text-[10px] text-[#2b221b]">★</div>' : ''}
+            `;
+            meter.appendChild(card);
+        }
+    }
+
+    /* ================= 120 FPS DELTA-TIME GAME LOOP ================= */
+    gameLoop(timestamp) {
+        const dt = Math.min(0.05, Math.max(0.001, (timestamp - this.lastTime) / 1000));
+        this.lastTime = timestamp;
+        this.globalAnimTimer += dt;
+
+        if (this.state === 'PLAYING') {
+            this.updatePhysics(dt);
+        }
+        this.renderScene(dt);
+
+        requestAnimationFrame((t) => this.gameLoop(t));
+    }
+
+    updatePhysics(dt) {
+        const p = this.player;
+        const b = this.boss;
+
+        // Timers
+        if (p.invulnTimer > 0) p.invulnTimer -= dt;
+        if (p.dashCooldown > 0) p.dashCooldown -= dt;
+        if (p.parryTimer > 0) {
+            p.parryTimer -= dt;
+            this.executeParryCheck();
+        }
+
+        // Aim Vector Calculations
+        let ax = 0;
+        let ay = 0;
+        if (this.input.left) { ax = -1; p.facing = -1; }
+        if (this.input.right) { ax = 1; p.facing = 1; }
+        if (this.input.up) ay = -1;
+        if (this.input.down) ay = 1;
+
+        if (ax === 0 && ay === 0) {
+            ax = p.facing;
+            ay = 0;
+        } else if (ax !== 0 && ay !== 0) {
+            ax *= 0.7071;
+            ay *= 0.7071;
+        }
+
+        p.crouching = p.onGround && this.input.down && !this.input.lock && !this.input.up;
+        if (p.crouching) {
+            ax = p.facing;
+            ay = 0;
+        }
+        p.aimX = ax;
+        p.aimY = ay;
+
+        // Player Movement & Dash
+        p.isMoving = false;
+        if (p.dashTimer > 0) {
+            p.dashTimer -= dt;
+            p.x += p.facing * 960 * dt;
+            p.vy = 0;
+        } else {
+            const speed = 400;
+            if (!this.input.lock && !p.crouching) {
+                if (this.input.left) { p.x -= speed * dt; p.isMoving = true; }
+                if (this.input.right) { p.x += speed * dt; p.isMoving = true; }
+            }
+
+            // Run Cycle Footstep Smoke
+            if (p.onGround && p.isMoving) {
+                p.runTimer += dt;
+                if (p.runTimer > 0.16) {
+                    p.runTimer = 0;
+                    p.runFrame = (p.runFrame + 1) % 4;
+                    this.addSmokePuff(p.x - p.facing * 18, p.y, 0.7);
+                }
+            } else {
+                p.runTimer = 0;
+            }
+
+            // Gravity & Ground Collision
+            p.vy += 2250 * dt;
+            p.y += p.vy * dt;
+
+            if (p.y >= this.groundY) {
+                if (!p.onGround && p.vy > 300) {
+                    this.addSmokePuff(p.x, this.groundY, 0.9);
+                }
+                p.y = this.groundY;
+                p.vy = 0;
+                p.onGround = true;
+                p.canParryInAir = false;
+            }
+        }
+
+        // Clamp arena bounds
+        p.x = Math.max(65, Math.min(this.W - 65, p.x));
+
+        // Player Firing (Hold Shoot OR Auto-Fire ON)
+        const isShooting = (this.input.shoot || this.input.autoFire);
+        if (p.shootCooldown > 0) p.shootCooldown -= dt;
+        if (isShooting && p.shootCooldown <= 0 && p.dashTimer <= 0) {
+            this.spawnPlayerBullet(p.x, p.y, p.aimX, p.aimY, p.crouching, false);
+            p.shootCooldown = WEAPONS[this.equippedWeapon].fireRate;
+        }
+
+        // Duo Partner (Mugman) AI
+        if (this.duoPartner) {
+            const dp = this.duoPartner;
+            const targetX = Math.max(80, p.x - 90);
+            dp.x += (targetX - dp.x) * 5.2 * dt;
+            dp.facing = (b.x >= dp.x) ? 1 : -1;
+
+            dp.jumpTimer -= dt;
+            if (dp.y >= this.groundY && dp.jumpTimer <= 0) {
+                const threat = this.enemyProjectiles.find(ep => Math.abs(ep.x - dp.x) < 170 && ep.y > this.groundY - 110);
+                if (threat) {
+                    dp.vy = -800;
+                    dp.jumpTimer = 1.1;
+                }
+            }
+            dp.vy += 2250 * dt;
+            dp.y += dp.vy * dt;
+            if (dp.y >= this.groundY) {
+                dp.y = this.groundY;
+                dp.vy = 0;
+            }
+
+            dp.shootTimer -= dt;
+            if (dp.shootTimer <= 0) {
+                const dx = b.x - dp.x;
+                const dy = (b.phase === 3 ? 240 : this.groundY - 150) - (dp.y - 50);
+                const len = Math.hypot(dx, dy) || 1;
+                this.spawnPlayerBullet(dp.x, dp.y, dx / len, dy / len, false, true);
+                dp.shootTimer = 0.22;
+            }
+        }
+
+        // Orbitals (Chaser EX)
+        for (let i = this.orbitals.length - 1; i >= 0; i--) {
+            const orb = this.orbitals[i];
+            orb.life -= dt;
+            orb.angle += 4.8 * dt;
+            const ox = p.x + Math.cos(orb.angle) * orb.radius;
+            const oy = (p.y - 48) + Math.sin(orb.angle) * orb.radius;
+
+            if (this.testBossCollision(ox, oy, 20, orb.damage * dt * 4)) {
+                this.addSparkParticles(ox, oy, '#2ed573', 2, 90);
+            }
+            if (orb.life <= 0) this.orbitals.splice(i, 1);
+        }
+
+        // Update Bullets
+        this.updateBullets(dt);
+
+        // Update Boss Phases & Tells
+        this.updateBossBehavior(dt);
+
+        // Update Secret Horace Radish
+        if (this.horaceRadish) {
+            this.updateHorace(dt);
+        }
+
+        // Update Enemy Projectiles
+        this.updateProjectiles(dt);
+
+        // Update Particles, Smoke Puffs, Floating Texts
+        this.updateEffects(dt);
+    }
+
+    spawnPlayerBullet(ox, oy, ax, ay, crouching, isPartner) {
+        const w = WEAPONS[this.equippedWeapon];
+        const mult = isPartner ? 0.45 : 1.0;
+        const sx = ox + ax * 36;
+        const sy = oy - (crouching ? 25 : 52) + ay * 22;
+
+        SFX.shoot(w.id);
+
+        if (w.id === 'peashooter') {
+            this.playerBullets.push({
+                type: 'pea',
+                x: sx,
+                y: sy,
+                vx: ax * w.speed,
+                vy: ay * w.speed,
+                r: 12,
+                damage: w.damage * mult,
+                color: isPartner ? '#3b82f6' : w.bulletColor,
+                life: 1.4
+            });
+        } else if (w.id === 'spread') {
+            const baseAng = Math.atan2(ay, ax);
+            const angles = [-0.34, -0.17, 0, 0.17, 0.34];
+            angles.forEach(off => {
+                const a = baseAng + off;
+                this.playerBullets.push({
+                    type: 'spread',
+                    x: sx,
+                    y: sy,
+                    vx: Math.cos(a) * w.speed,
+                    vy: Math.sin(a) * w.speed,
+                    r: 10,
+                    damage: w.damage * mult,
+                    color: w.bulletColor,
+                    life: 0.34
+                });
+            });
+        } else if (w.id === 'chaser') {
+            this.playerBullets.push({
+                type: 'chaser',
+                x: sx,
+                y: sy,
+                vx: ax * w.speed,
+                vy: ay * w.speed,
+                r: 9,
+                damage: w.damage * mult,
+                color: w.bulletColor,
+                life: 2.2
+            });
+        } else if (w.id === 'lobber') {
+            this.playerBullets.push({
+                type: 'lobber',
+                x: sx,
+                y: sy,
+                vx: (ax === 0 ? this.player.facing : Math.sign(ax)) * 520,
+                vy: ay < -0.3 ? -700 : -440,
+                gravity: 1650,
+                bounces: 2,
+                r: 16,
+                damage: w.damage * mult,
+                color: w.bulletColor,
+                life: 2.6
+            });
+        }
+    }
+
+    updateBullets(dt) {
+        for (let i = this.playerBullets.length - 1; i >= 0; i--) {
+            const b = this.playerBullets[i];
+            b.life -= dt;
+            if (b.life <= 0) {
+                this.playerBullets.splice(i, 1);
+                continue;
+            }
+
+            if (b.type === 'chaser') {
+                // Seek homing carrots, secret radish, or boss
+                let tx = this.boss.x;
+                let ty = this.boss.phase === 3 ? 240 : this.groundY - 160;
+
+                const destructible = this.enemyProjectiles.find(ep => ep.destructible);
+                if (destructible) {
+                    tx = destructible.x;
+                    ty = destructible.y;
+                } else if (this.horaceRadish) {
+                    tx = this.horaceRadish.x;
+                    ty = this.horaceRadish.y - 60;
+                }
+
+                const wantAng = Math.atan2(ty - b.y, tx - b.x);
+                const curAng = Math.atan2(b.vy, b.vx);
+                let diff = wantAng - curAng;
+                while (diff > Math.PI) diff -= Math.PI * 2;
+                while (diff < -Math.PI) diff += Math.PI * 2;
+                const newAng = curAng + Math.sign(diff) * Math.min(Math.abs(diff), 8.5 * dt);
+                b.vx = Math.cos(newAng) * 720;
+                b.vy = Math.sin(newAng) * 720;
+            } else if (b.type === 'lobber' || b.type === 'ex_lobber') {
+                b.vy += b.gravity * dt;
+                if (b.y + b.r >= this.groundY) {
+                    b.y = this.groundY - b.r;
+                    if (b.bounces > 0) {
+                        b.bounces--;
+                        b.vy = -480;
+                        this.addSmokePuff(b.x, this.groundY, 0.7);
+                    } else {
+                        if (b.type === 'ex_lobber') {
+                            this.testBossCollision(b.x, b.y, 160, b.damage);
+                            this.addSmokePuff(b.x, b.y, 2.0);
+                        }
+                        this.playerBullets.splice(i, 1);
+                        continue;
+                    }
+                }
+            }
+
+            b.x += b.vx * dt;
+            b.y += b.vy * dt;
+
+            // Check Destructible Enemy Projectiles
+            let hitEnemyProj = false;
+            for (let j = this.enemyProjectiles.length - 1; j >= 0; j--) {
+                const ep = this.enemyProjectiles[j];
+                if (!ep.destructible) continue;
+                if (Math.hypot(b.x - ep.x, b.y - ep.y) <= b.r + ep.r) {
+                    ep.hp -= b.damage;
+                    this.addSparkParticles(b.x, b.y, '#e05244', 4, 110);
+                    if (ep.hp <= 0) {
+                        this.addSmokePuff(ep.x, ep.y, 1.2);
+                        this.enemyProjectiles.splice(j, 1);
+                    }
+                    hitEnemyProj = true;
+                    break;
+                }
+            }
+            if (hitEnemyProj && b.type !== 'ex_pea') {
+                this.playerBullets.splice(i, 1);
+                continue;
+            }
+
+            // Check Secret Horace Radish
+            if (this.horaceRadish) {
+                const hr = this.horaceRadish;
+                if (Math.hypot(b.x - hr.x, b.y - (hr.y - 60)) <= b.r + 60) {
+                    hr.hp -= b.damage;
+                    hr.hitFlash = 0.08;
+                    SFX.bossHit();
+                    this.addSparkParticles(b.x, b.y, '#e05244', 5, 140);
+                    if (hr.hp <= 0) {
+                        this.addSmokePuff(hr.x, hr.y - 60, 2.2);
+                        this.addFloatingText(hr.x, hr.y - 110, 'ХОРАС ПОВЕРЖЕН!', '#e05244');
+                        this.horaceRadish = null;
+                    }
+                    if (b.type !== 'ex_pea') {
+                        this.playerBullets.splice(i, 1);
+                        continue;
+                    }
+                }
+            }
+
+            // Check Boss
+            if (this.testBossCollision(b.x, b.y, b.r, b.damage)) {
+                this.addSparkParticles(b.x, b.y, b.color, 4, 150);
+                if (b.type !== 'ex_pea') {
+                    this.playerBullets.splice(i, 1);
+                    continue;
+                }
+            }
+
+            if (b.x < -100 || b.x > this.W + 100 || b.y < -100 || b.y > this.H + 100) {
+                this.playerBullets.splice(i, 1);
+            }
+        }
+    }
+
+    testBossCollision(bx, by, br, damage) {
+        const b = this.boss;
+        if (!b) return false;
+
+        let hit = false;
+        if (b.phase === 1) {
+            // Giant Sal Spudder on Right Screen
+            if (bx + br > b.x - 150 && bx - br < b.x + 150 && by + br > b.y - 410 && by - br < b.y) {
+                hit = true;
+            }
+        } else if (b.phase === 2) {
+            // Giant Ollie Onion in Center
+            if (bx + br > b.x - 140 && bx - br < b.x + 140 && by + br > b.y - 350 && by - br < b.y) {
+                hit = true;
+                b.ollieDamaged = true; // Player broke peace!
+            }
+        } else if (b.phase === 3) {
+            // Giant Chauncey Carrot Looms in Center Upper
+            if (bx + br > b.x - 120 && bx - br < b.x + 120 && by + br > 50 && by - br < 380) {
+                hit = true;
+            }
+        }
+
+        if (hit) {
+            b.hp -= damage;
+            b.hitFlash = 0.07;
+            SFX.bossHit();
+
+            // Passive EX buildup from hitting boss
+            const prev = Math.floor(this.player.energy / 100);
+            this.player.energy = Math.min(500, this.player.energy + damage * 0.36);
+            if (Math.floor(this.player.energy / 100) > prev) {
+                sendTelegramHaptic('light');
+            }
+            this.updateHUD();
+
+            if (b.hp <= 0) {
+                this.advanceBossPhase();
+            }
+            return true;
+        }
+        return false;
+    }
+
+    advanceBossPhase() {
+        const b = this.boss;
+        this.enemyProjectiles = [];
+        this.addSmokePuff(b.x, this.groundY - 180, 3.0);
+        sendTelegramHaptic('heavy');
+
+        if (b.phase === 1) {
+            // Transition to Phase 2: Ollie Bulb (Onion in Center)
+            b.phase = 2;
+            b.name = 'ФАЗА 2: ОЛЛИ ЛУКОВИЦА';
+            b.hp = 460;
+            b.maxHp = 460;
+            b.x = this.W / 2;
+            b.y = this.groundY;
+            b.state = 'crying';
+            b.timer = 1.4;
+            b.ollieDamaged = false;
+            b.ollieMercyTimer = 8.5;
+            this.addFloatingText(this.W / 2, 250, 'ОЛЛИ ЛУКОВИЦА!', '#be895b');
+        } else if (b.phase === 2) {
+            const peaceful = !b.ollieDamaged;
+            // Transition to Phase 3: Chauncey Chantenay Carrot
+            b.phase = 3;
+            b.name = 'ФАЗА 3: ЧОНСИ МОРКОВКА';
+            b.hp = 580;
+            b.maxHp = 580;
+            b.x = this.W / 2;
+            b.y = 360;
+            b.timer = 1.6;
+            b.carrotAttackMode = 'missiles';
+            b.carrotRingsShot = 0;
+            this.addFloatingText(this.W / 2, 220, 'ЧОНСИ ШАНТАНЕ!', '#e05244');
+
+            if (peaceful) {
+                // Secret Pacifist Radish Horace mini-boss appears!
+                this.horaceRadish = {
+                    x: 180,
+                    y: this.groundY,
+                    vx: 290,
+                    hp: 240,
+                    hitFlash: 0
+                };
+                this.addFloatingText(this.W / 2, 310, 'СЕКРЕТ: ЗЛАЯ РЕДИСКА ХОРАС!', '#e05244');
+                sendTelegramHaptic('warning');
+            }
+        } else if (b.phase === 3) {
+            // KNOCKOUT!
+            this.state = 'OVER';
+            this.coins += 1;
+            this.save();
+            SFX.victoryFanfare();
+            sendTelegramHaptic('success');
+            this.openModalUI(
+                'ПОБЕДА! +1 МОНЕТА',
+                'A KNOCKOUT!',
+                'Ботаническая банда повержена! Ты заработал 1 монету для лавки Поркринда.',
+                'СЫГРАТЬ ЕЩЕ',
+                () => this.restartCurrent()
+            );
+        }
+        this.updateHUD();
+    }
+
+    updateBossBehavior(dt) {
+        const b = this.boss;
+        if (b.hitFlash > 0) b.hitFlash -= dt;
+
+        // Rubber-hose squash & stretch breathing
+        b.squash = 1 + Math.sin(this.globalAnimTimer * 5) * 0.04;
+        b.stretch = 1 - Math.sin(this.globalAnimTimer * 5) * 0.04;
+
+        if (b.phase === 1) {
+            // SAL POTATO: Telegraph Tell (1s Wind-Up puffing cheeks) -> Spits 3 dirt clods + 1 Pink Worm
+            const hpRatio = b.hp / b.maxHp;
+            const speedBonus = (1 - hpRatio) * 230;
+
+            b.timer -= dt;
+
+            if (b.state === 'idle') {
+                b.cheeksPuffed = false;
+                b.mouthOpen = 0;
+                if (b.timer <= 0) {
+                    // Enter Wind-Up state (1-second clear telegraph!)
+                    b.state = 'windup';
+                    b.timer = 0.95; // 1s anticipation
+                    b.cheeksPuffed = true;
+                    this.addSmokePuff(b.x - 120, this.groundY - 110, 0.8);
+                }
+            } else if (b.state === 'windup') {
+                b.cheeksPuffed = true;
+                b.mouthOpen = 0.3;
+                if (b.timer <= 0) {
+                    // Start Spitting salvo
+                    b.state = 'spitting';
+                    b.spitCount = 0;
+                    b.timer = 0.1;
+                }
+            } else if (b.state === 'spitting') {
+                b.mouthOpen = 1.0;
+                if (b.timer <= 0) {
+                    // Spit projectile!
+                    const isPinkWorm = (b.spitCount === 3) || (Math.random() < 0.20);
+                    SFX.bossSpit();
+
+                    this.enemyProjectiles.push({
+                        kind: isPinkWorm ? 'worm' : 'dirt',
+                        x: b.x - 150,
+                        y: this.groundY - (isPinkWorm ? 65 : 50),
+                        vx: -(560 + speedBonus),
+                        vy: isPinkWorm ? -240 : 0,
+                        gravity: isPinkWorm ? 720 : 0,
+                        bounceY: this.groundY - 50,
+                        r: 32,
+                        pink: isPinkWorm,
+                        destructible: false
+                    });
+
+                    this.addSmokePuff(b.x - 155, this.groundY - 70, 1.1);
+                    this.addSparkParticles(b.x - 150, this.groundY - 60, isPinkWorm ? '#ff66c4' : '#6b4226', 7, 160);
+
+                    b.spitCount++;
+                    if (b.spitCount >= 4) {
+                        b.state = 'idle';
+                        b.timer = Math.max(1.1, 1.7 - (1 - hpRatio) * 0.5);
+                    } else {
+                        b.timer = Math.max(0.38, 0.52 - (1 - hpRatio) * 0.15);
+                    }
+                }
+            }
+        } else if (b.phase === 2) {
+            // OLLIE ONION: Weeping & Tears Rain (20% Pink Parriable Tears)
+            if (!b.ollieDamaged) {
+                b.ollieMercyTimer -= dt;
+                if (b.ollieMercyTimer <= 0) {
+                    this.addFloatingText(b.x, b.y - 320, 'ОЛЛИ ПОЩАЖЁН!', '#2ed573');
+                    this.advanceBossPhase();
+                    return;
+                }
+            } else {
+                b.timer -= dt;
+                if (b.timer <= 0) {
+                    b.timer = 0.26;
+                    let rx = 90 + Math.random() * (this.W - 180);
+                    if (Math.abs(rx - b.x) < 100) {
+                        rx += (rx < b.x ? -120 : 120);
+                    }
+                    const isPink = Math.random() < 0.22;
+                    this.enemyProjectiles.push({
+                        kind: 'tear',
+                        x: rx,
+                        y: -30,
+                        vx: 0,
+                        vy: 390 + Math.random() * 150,
+                        r: 22,
+                        pink: isPink,
+                        destructible: false
+                    });
+                }
+            }
+        } else if (b.phase === 3) {
+            // CHAUNCEY CARROT: Homing Carrots + 3rd-Eye Psychic Rings
+            b.timer -= dt;
+            if (b.timer <= 0) {
+                if (b.carrotAttackMode === 'missiles') {
+                    const fromLeft = Math.random() < 0.5;
+                    const isPink = Math.random() < 0.22;
+                    this.enemyProjectiles.push({
+                        kind: 'carrot_missile',
+                        x: fromLeft ? 100 + Math.random() * 220 : this.W - 100 - Math.random() * 220,
+                        y: -35,
+                        vx: 0,
+                        vy: 210,
+                        r: 24,
+                        pink: isPink,
+                        destructible: !isPink,
+                        hp: 18
+                    });
+
+                    b.carrotRingsShot++;
+                    if (b.carrotRingsShot >= 4) {
+                        b.carrotAttackMode = 'rings';
+                        b.carrotRingsShot = 0;
+                        b.timer = 1.6;
+                    } else {
+                        b.timer = 0.82;
+                    }
+                } else {
+                    // Psychic Rings from Third Eye
+                    const p = this.player;
+                    const ox = b.x;
+                    const oy = 175;
+                    const ang = Math.atan2((p.y - 45) - oy, p.x - ox);
+                    const isPink = (b.carrotRingsShot === 2) || (Math.random() < 0.22);
+
+                    SFX.shoot('chaser');
+                    this.enemyProjectiles.push({
+                        kind: 'ring',
+                        x: ox,
+                        y: oy,
+                        vx: Math.cos(ang) * 540,
+                        vy: Math.sin(ang) * 540,
+                        r: 28,
+                        pink: isPink,
+                        destructible: false
+                    });
+
+                    b.carrotRingsShot++;
+                    if (b.carrotRingsShot >= 3) {
+                        b.carrotAttackMode = 'missiles';
+                        b.carrotRingsShot = 0;
+                        b.timer = 1.8;
+                    } else {
+                        b.timer = 0.44;
+                    }
+                }
+            }
+        }
+    }
+
+    updateHorace(dt) {
+        const hr = this.horaceRadish;
+        if (!hr) return;
+        if (hr.hitFlash > 0) hr.hitFlash -= dt;
+
+        hr.x += hr.vx * dt;
+        if (hr.x < 90) { hr.x = 90; hr.vx = Math.abs(hr.vx); }
+        if (hr.x > this.W - 90) { hr.x = this.W - 90; hr.vx = -Math.abs(hr.vx); }
+
+        const p = this.player;
+        if (p.invulnTimer <= 0 && p.dashTimer <= 0) {
+            if (Math.hypot(p.x - hr.x, (p.y - 45) - (hr.y - 50)) < 70) {
+                this.hurtPlayer();
+            }
+        }
+    }
+
+    updateProjectiles(dt) {
+        const p = this.player;
+        const px = p.x;
+        const py = p.y - (p.crouching ? 25 : 48);
+        const playerRadius = p.crouching ? 22 : 30;
+
+        for (let i = this.enemyProjectiles.length - 1; i >= 0; i--) {
+            const ep = this.enemyProjectiles[i];
+
+            if (ep.kind === 'worm') {
+                ep.vy += ep.gravity * dt;
+                if (ep.y >= ep.bounceY) {
+                    ep.y = ep.bounceY;
+                    ep.vy = -230;
+                }
+            } else if (ep.kind === 'carrot_missile') {
+                const ang = Math.atan2(py - ep.y, px - ep.x);
+                const spd = 250;
+                ep.vx += (Math.cos(ang) * spd - ep.vx) * 3.6 * dt;
+                ep.vy += (Math.sin(ang) * spd - ep.vy) * 3.6 * dt;
+            } else if (ep.kind === 'ring') {
+                ep.r = Math.min(50, ep.r + 14 * dt);
+            }
+
+            ep.x += ep.vx * dt;
+            ep.y += ep.vy * dt;
+
+            // In-flight parry hit check
+            if (ep.pink && p.parryTimer > 0) {
+                if (Math.hypot(ep.x - px, ep.y - py) <= ep.r + 75) {
+                    this.executeParryCheck();
+                    continue;
+                }
+            }
+
+            // Hit Player Check
+            if (p.invulnTimer <= 0 && p.dashTimer <= 0) {
+                if (Math.hypot(ep.x - px, ep.y - py) <= ep.r + playerRadius - 6) {
+                    this.enemyProjectiles.splice(i, 1);
+                    this.hurtPlayer();
+                    continue;
+                }
+            }
+
+            // Out of bounds
+            if (ep.x < -140 || ep.x > this.W + 140 || ep.y > this.groundY + 30) {
+                if (ep.kind === 'tear') {
+                    this.addSparkParticles(ep.x, this.groundY, ep.pink ? '#ff66c4' : '#38b6ff', 4, 110);
+                }
+                this.enemyProjectiles.splice(i, 1);
+            }
+        }
+    }
+
+    hurtPlayer() {
+        const p = this.player;
+        p.hp -= 1;
+        p.invulnTimer = 1.6;
+        SFX.playerHurt();
+        sendTelegramHaptic('error');
+        this.addSmokePuff(p.x, p.y - 48, 1.8);
+        this.addSparkParticles(p.x, p.y - 48, '#e05244', 22, 320);
+        this.addFloatingText(p.x, p.y - 95, '-1 HP!', '#e05244');
+        this.updateHUD();
+
+        if (p.hp <= 0) {
+            this.state = 'OVER';
+            this.openModalUI(
+                'ПОРАЖЕНИЕ',
+                'YOU DIED!',
+                'Уворачивайся рывками (DASH) и парируй розовые атаки двойным прыжком!',
+                'ПОПРОБОВАТЬ СНОВА',
+                () => this.restartCurrent()
+            );
+        }
+    }
+
+    addSmokePuff(x, y, scale = 1.0) {
+        this.smokePuffs.push({
+            x, y,
+            scale,
+            life: 0.35,
+            maxLife: 0.35
+        });
+    }
+
+    addSparkParticles(x, y, color, count = 8, speed = 200) {
+        for (let i = 0; i < count; i++) {
+            const a = Math.random() * Math.PI * 2;
+            const s = (0.3 + Math.random() * 0.7) * speed;
+            this.particles.push({
+                x, y,
+                vx: Math.cos(a) * s,
+                vy: Math.sin(a) * s,
+                r: 4 + Math.random() * 5,
+                color,
+                life: 0.28 + Math.random() * 0.25
+            });
+        }
+    }
+
+    addFloatingText(x, y, text, color = '#ffd32a') {
+        this.floatingTexts.push({ x, y, text, color, life: 1.0 });
+    }
+
+    updateEffects(dt) {
+        for (let i = this.particles.length - 1; i >= 0; i--) {
+            const pt = this.particles[i];
+            pt.x += pt.vx * dt;
+            pt.y += pt.vy * dt;
+            pt.life -= dt;
+            if (pt.life <= 0) this.particles.splice(i, 1);
+        }
+        for (let i = this.smokePuffs.length - 1; i >= 0; i--) {
+            const sp = this.smokePuffs[i];
+            sp.life -= dt;
+            if (sp.life <= 0) this.smokePuffs.splice(i, 1);
+        }
+        for (let i = this.floatingTexts.length - 1; i >= 0; i--) {
+            const ft = this.floatingTexts[i];
+            ft.y -= 45 * dt;
+            ft.life -= dt;
+            if (ft.life <= 0) this.floatingTexts.splice(i, 1);
+        }
+    }
+
+    /* ================= 1930s RUBBER-HOSE PROCEDURAL CARTOON RENDERER ================= */
+    renderScene() {
+        const ctx = this.ctx;
+        const W = this.W;
+        const H = this.H;
+
+        // 1. Vintage Warm Watercolor Sky (Sepia / Pale Mustard 1930s tone)
+        ctx.fillStyle = '#eddab8';
+        ctx.fillRect(0, 0, W, H);
+
+        // Distant hills with vintage black outline
+        ctx.strokeStyle = '#2b211b';
+        ctx.lineWidth = 4;
+        ctx.fillStyle = '#c7b089';
+        ctx.beginPath();
+        ctx.arc(320, this.groundY - 30, 320, Math.PI, 0);
+        ctx.arc(980, this.groundY - 30, 420, Math.PI, 0);
+        ctx.fill();
+        ctx.stroke();
+
+        // Garden Wooden Fence with inked posts
+        ctx.fillStyle = '#ab936d';
+        this.gardenFence.forEach(f => {
+            ctx.beginPath();
+            ctx.rect(f.x, this.groundY - f.h - 35, 36, f.h);
+            ctx.fill();
+            ctx.stroke();
+        });
+
+        // Soil mound back-layer
+        ctx.fillStyle = '#6b4f3b';
+        ctx.beginPath();
+        ctx.rect(0, this.groundY - 35, W, 40);
+        ctx.fill();
+        ctx.stroke();
+
+        if (this.state === 'MENU') return;
+
+        // 2. Render Boss (Massive scale filling the screen)
+        if (this.boss) {
+            this.renderBossEntity(ctx, this.boss);
+        }
+
+        // 3. Foreground Grass Ground Layer
+        ctx.fillStyle = '#556b2f';
+        ctx.beginPath();
+        ctx.rect(0, this.groundY, W, H - this.groundY);
+        ctx.fill();
+        ctx.stroke();
+
+        // 4. Secret Horace Radish
+        if (this.horaceRadish) {
+            this.renderHorace(ctx, this.horaceRadish);
+        }
+
+        // 5. Duo Mugman
+        if (this.duoPartner) {
+            const dp = this.duoPartner;
+            this.drawCartoonCuphead(ctx, dp.x, dp.y, dp.facing, 0, false, false, 0, '#3b82f6', false);
+        }
+
+        // 6. Player (Cuphead) with Squash & Stretch
+        if (this.player) {
+            const p = this.player;
+            if (p.invulnTimer <= 0 || Math.floor(p.invulnTimer * 16) % 2 === 0) {
+                this.drawCartoonCuphead(ctx, p.x, p.y, p.facing, p.runFrame, p.crouching, p.dashTimer > 0, p.parryTimer, '#e05244', false);
+            }
+
+            // Chaser EX Orbitals
+            this.orbitals.forEach(orb => {
+                const ox = p.x + Math.cos(orb.angle) * orb.radius;
+                const oy = (p.y - 48) + Math.sin(orb.angle) * orb.radius;
+                this.drawVintageStar(ctx, ox, oy, 16, '#2ed573');
+            });
+        }
+
+        // 7. Bullets
+        this.playerBullets.forEach(b => {
+            ctx.strokeStyle = '#2b211b';
+            ctx.lineWidth = 3;
+            ctx.fillStyle = b.color;
+            ctx.beginPath();
+            ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            // Inner white cartoon highlight
+            ctx.fillStyle = '#fdf5e2';
+            ctx.beginPath();
+            ctx.arc(b.x - b.r * 0.3, b.y - b.r * 0.3, b.r * 0.35, 0, Math.PI * 2);
+            ctx.fill();
+        });
+
+        // 8. Enemy Projectiles (Telegraphed, Worms, Pink Parriable)
+        this.enemyProjectiles.forEach(ep => {
+            this.renderEnemyBullet(ctx, ep);
+        });
+
+        // 9. Dust Smoke Puffs (Rubber-Hose 1930s clouds)
+        this.smokePuffs.forEach(sp => {
+            this.drawSmokePuff(ctx, sp);
+        });
+
+        // 10. Sparks & Particles
+        this.particles.forEach(pt => {
+            ctx.fillStyle = pt.color;
+            ctx.beginPath();
+            ctx.arc(pt.x, pt.y, pt.r, 0, Math.PI * 2);
+            ctx.fill();
+        });
+
+        // 11. Floating Score / Status Texts
+        ctx.textAlign = 'center';
+        ctx.font = 'bold 22px Kalam, cursive';
+        this.floatingTexts.forEach(ft => {
+            ctx.fillStyle = '#2b211b';
+            ctx.fillText(ft.text, ft.x + 2, ft.y + 2);
+            ctx.fillStyle = ft.color;
+            ctx.fillText(ft.text, ft.x, ft.y);
+        });
+    }
+
+    /* Authentic 1930s Rubber-Hose Cuphead / Mugman Drawing */
+    drawCartoonCuphead(ctx, x, y, facing, runFrame, crouching, dashing, parryTimer, shortsColor, isStatic) {
+        ctx.save();
+        ctx.translate(x, y);
+
+        // Breathing Squash & Stretch
+        const breathSquash = isStatic ? 1 : (1 + Math.sin(this.globalAnimTimer * 8) * 0.04);
+        const breathStretch = isStatic ? 1 : (1 - Math.sin(this.globalAnimTimer * 8) * 0.04);
+
+        if (dashing) {
+            ctx.scale(1.3 * facing, 0.7);
+        } else if (crouching) {
+            ctx.scale(1.15 * facing, 0.65);
+        } else {
+            ctx.scale(facing * breathStretch, breathSquash);
+        }
+
+        ctx.strokeStyle = '#2b211b';
+        ctx.lineWidth = 3.5;
+        ctx.lineJoin = 'round';
+        ctx.lineCap = 'round';
+
+        // Pink Parry Slap Aura
+        if (parryTimer > 0) {
+            ctx.fillStyle = 'rgba(255, 102, 196, 0.45)';
+            ctx.beginPath();
+            ctx.arc(0, -48, 65, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+        }
+
+        // 1. Brown Cartoon Boots
+        const legOffset = (!crouching && !dashing && !isStatic) ? Math.sin(this.globalAnimTimer * 16) * 6 : 0;
+        ctx.fillStyle = '#9c6644';
+        // Left foot
+        ctx.beginPath();
+        ctx.ellipse(-18, -12 + legOffset, 16, 10, -0.1, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        // Right foot
+        ctx.beginPath();
+        ctx.ellipse(18, -12 - legOffset, 16, 10, 0.1, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        // 2. Red / Blue Shorts with white buttons
+        ctx.fillStyle = shortsColor;
+        ctx.beginPath();
+        ctx.roundRect(-24, -42, 48, 28, 12);
+        ctx.fill();
+        ctx.stroke();
+
+        // White circular buttons
+        ctx.fillStyle = '#fdf5e2';
+        ctx.beginPath();
+        ctx.arc(-8, -28, 4, 0, Math.PI * 2);
+        ctx.arc(8, -28, 4, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        // 3. Black Rubber-Hose Torso
+        ctx.fillStyle = '#2b211b';
+        ctx.beginPath();
+        ctx.roundRect(-16, -66, 32, 26, 8);
+        ctx.fill();
+        ctx.stroke();
+
+        // 4. White Cartoon Gloves (Pac-Man 3-line cuffs)
+        ctx.fillStyle = '#fdf5e2';
+        // Left fist
+        ctx.beginPath();
+        ctx.arc(-24, -44, 11, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        // Right finger gun hand
+        ctx.beginPath();
+        ctx.arc(28, -52, 11, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        // Pointing finger tip
+        ctx.beginPath();
+        ctx.roundRect(30, -56, 16, 9, 4);
+        ctx.fill();
+        ctx.stroke();
+
+        // 5. Cup Head
+        ctx.fillStyle = '#fdf5e2';
+        ctx.beginPath();
+        ctx.ellipse(0, -82, 34, 25, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        // Cup Rim Oval
+        ctx.fillStyle = '#d2c2a6';
+        ctx.beginPath();
+        ctx.ellipse(0, -100, 28, 10, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        // Handle on the back of the head
+        ctx.fillStyle = '#fdf5e2';
+        ctx.beginPath();
+        ctx.arc(-30, -82, 12, 1.2, 4.8);
+        ctx.stroke();
+
+        // 6. Striped Bendy Straw
+        ctx.save();
+        ctx.translate(-8, -104);
+        ctx.fillStyle = shortsColor;
+        ctx.beginPath();
+        ctx.roundRect(-5, -24, 10, 24, 3);
+        ctx.fill();
+        ctx.stroke();
+        // Straw bent tip
+        ctx.beginPath();
+        ctx.roundRect(-18, -28, 18, 9, 3);
+        ctx.fill();
+        ctx.stroke();
+        ctx.restore();
+
+        // 7. Expressive 1930s Pacman Pie-Eyes & Smile
+        ctx.fillStyle = '#2b211b';
+        // Left Pie Eye
+        ctx.beginPath();
+        ctx.ellipse(6, -84, 8, 13, 0.1, 0, Math.PI * 2);
+        ctx.fill();
+        // Right Pie Eye
+        ctx.beginPath();
+        ctx.ellipse(20, -84, 8, 13, 0.1, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Eye Pie Cutouts (Vintage Pac-Man style)
+        ctx.fillStyle = '#fdf5e2';
+        ctx.beginPath();
+        ctx.arc(6, -86, 4, 0, Math.PI * 2);
+        ctx.arc(20, -86, 4, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Red Cartoon Nose
+        ctx.fillStyle = shortsColor;
+        ctx.beginPath();
+        ctx.arc(14, -75, 6, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        // Huge Vintage Grin
+        ctx.fillStyle = '#e05244';
+        ctx.beginPath();
+        ctx.arc(10, -68, 14, 0, Math.PI);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.restore();
+    }
+
+    /* Render Boss Entity with Telegraphing Animations */
+    renderBossEntity(ctx, b) {
+        ctx.save();
+        ctx.strokeStyle = '#2b211b';
+        ctx.lineWidth = 4;
+        ctx.lineJoin = 'round';
+
+        const flash = b.hitFlash > 0;
+
+        if (b.phase === 1) {
+            // SAL POTATO: Giant screen-filling potato
+            ctx.translate(b.x, b.y);
+            ctx.scale(b.squash, b.stretch);
+
+            // Soil base mound
+            ctx.fillStyle = '#4a3b30';
+            ctx.beginPath();
+            ctx.ellipse(0, 0, 160, 45, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            // Main Potato Body
+            ctx.fillStyle = flash ? '#fdf5e2' : '#c89d5d';
+            ctx.beginPath();
+            ctx.ellipse(0, -210, 155, 215, -0.04, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            // Spots
+            ctx.fillStyle = '#9e753b';
+            ctx.beginPath();
+            ctx.ellipse(-60, -320, 22, 14, 0.2, 0, Math.PI * 2);
+            ctx.ellipse(65, -280, 26, 16, -0.3, 0, Math.PI * 2);
+            ctx.ellipse(75, -140, 18, 12, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Cheeks Bulging (Telegraph Tell!)
+            if (b.cheeksPuffed) {
+                ctx.fillStyle = flash ? '#ffffff' : '#dbae6e';
+                ctx.beginPath();
+                ctx.ellipse(-95, -170, 45, 38, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+            }
+
+            // Inked Eyebrows (Wrinkles & Rage)
+            ctx.fillStyle = '#2b211b';
+            ctx.save();
+            ctx.translate(-50, -250);
+            ctx.rotate(0.2);
+            ctx.beginPath();
+            ctx.roundRect(-60, -10, 120, 16, 6);
+            ctx.fill();
+            ctx.restore();
+
+            // Eyes Looking furiously at player
+            ctx.fillStyle = '#fdf5e2';
+            ctx.beginPath();
+            ctx.arc(-80, -215, 34, 0, Math.PI * 2);
+            ctx.arc(-15, -215, 34, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.fillStyle = '#2b211b';
+            ctx.beginPath();
+            ctx.arc(-92, -212, 14, 0, Math.PI * 2);
+            ctx.arc(-26, -212, 14, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Spitting Mouth (Animated open size!)
+            ctx.fillStyle = '#2b211b';
+            const mouthH = 35 + b.mouthOpen * 45;
+            ctx.beginPath();
+            ctx.ellipse(-85, -145, 45, mouthH / 2, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            // Inked Teeth inside mouth
+            ctx.fillStyle = '#fdf5e2';
+            ctx.beginPath();
+            ctx.rect(-105, -155, 45, 12);
+            ctx.fill();
+            ctx.stroke();
+
+            // Two fists clenched
+            ctx.fillStyle = '#c89d5d';
+            ctx.beginPath();
+            ctx.ellipse(-145, -120, 30, 24, 0.3, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+        } else if (b.phase === 2) {
+            // OLLIE ONION: Weeping & Tears
+            ctx.translate(b.x, b.y);
+            ctx.scale(b.squash, b.stretch);
+
+            // Green onion sprout top
+            ctx.fillStyle = '#556b2f';
+            ctx.beginPath();
+            ctx.roundRect(-22, -430, 44, 90, 16);
+            ctx.fill();
+            ctx.stroke();
+
+            // Main Onion Bulb
+            ctx.fillStyle = flash ? '#fdf5e2' : '#c98bb9';
+            ctx.beginPath();
+            ctx.arc(0, -175, 175, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            // Inner layer
+            ctx.fillStyle = '#dba7cc';
+            ctx.beginPath();
+            ctx.arc(-10, -175, 140, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            // Crying Eyes
+            ctx.fillStyle = '#fdf5e2';
+            ctx.beginPath();
+            ctx.arc(-55, -200, 34, 0, Math.PI * 2);
+            ctx.arc(55, -200, 34, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.fillStyle = '#2b211b';
+            ctx.beginPath();
+            ctx.arc(-55, -200, 12, 0, Math.PI * 2);
+            ctx.arc(55, -200, 12, 0, Math.PI * 2);
+            ctx.fill();
+
+            if (b.ollieDamaged) {
+                // Wide Open Sobbing Mouth & Tear Streams
+                ctx.fillStyle = '#2b211b';
+                ctx.beginPath();
+                ctx.ellipse(0, -135, 55, 35, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+
+                // Blue Teardrop Fountains
+                ctx.fillStyle = '#38b6ff';
+                ctx.beginPath();
+                ctx.roundRect(-90, -350, 24, 150, 12);
+                ctx.roundRect(66, -350, 24, 150, 12);
+                ctx.fill();
+                ctx.stroke();
+            } else {
+                // Peaceful Smile
+                ctx.fillStyle = '#2b211b';
+                ctx.beginPath();
+                ctx.arc(0, -135, 34, 0, Math.PI);
+                ctx.fill();
+                ctx.stroke();
+            }
+
+        } else if (b.phase === 3) {
+            // CHAUNCEY CARROT: Third-Eye Psychic Rings & Floating Carrots
+            ctx.translate(b.x, 350);
+            ctx.scale(b.squash, b.stretch);
+
+            // Green carrot leafy top
+            ctx.fillStyle = '#556b2f';
+            ctx.beginPath();
+            ctx.arc(-70, -290, 50, 0, Math.PI * 2);
+            ctx.arc(0, -320, 65, 0, Math.PI * 2);
+            ctx.arc(70, -290, 50, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            // Massive Carrot Body Cone
+            ctx.fillStyle = flash ? '#fdf5e2' : '#e67e22';
+            ctx.beginPath();
+            ctx.moveTo(-150, -260);
+            ctx.lineTo(150, -260);
+            ctx.lineTo(60, 240);
+            ctx.lineTo(-60, 240);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+
+            // Forehead Third Eye (Psychic Beam Origin)
+            ctx.fillStyle = '#ffd32a';
+            ctx.beginPath();
+            ctx.ellipse(0, -200, 42, 26, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.fillStyle = '#a55eea';
+            ctx.beginPath();
+            ctx.arc(0, -200, 16, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            // Two main crazy cartoon eyes
+            ctx.fillStyle = '#fdf5e2';
+            ctx.beginPath();
+            ctx.arc(-55, -125, 32, 0, Math.PI * 2);
+            ctx.arc(55, -125, 32, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.fillStyle = '#e05244';
+            ctx.beginPath();
+            ctx.arc(-55, -125, 13, 0, Math.PI * 2);
+            ctx.arc(55, -125, 13, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Wide evil toothy grin
+            ctx.fillStyle = '#2b211b';
+            ctx.beginPath();
+            ctx.arc(0, -65, 60, 0, Math.PI);
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.fillStyle = '#fdf5e2';
+            for (let t = -45; t <= 45; t += 22) {
+                ctx.beginPath();
+                ctx.rect(t - 8, -65, 16, 16);
+                ctx.fill();
+                ctx.stroke();
+            }
+        }
+
+        ctx.restore();
+    }
+
+    renderHorace(ctx, hr) {
+        ctx.save();
+        ctx.translate(hr.x, hr.y);
+        ctx.strokeStyle = '#2b211b';
+        ctx.lineWidth = 3.5;
+
+        // Leaf sprout
+        ctx.fillStyle = '#556b2f';
+        ctx.beginPath();
+        ctx.roundRect(-16, -130, 32, 40, 8);
+        ctx.fill();
+        ctx.stroke();
+
+        // Radish round body
+        ctx.fillStyle = hr.hitFlash > 0 ? '#fdf5e2' : '#e05244';
+        ctx.beginPath();
+        ctx.arc(0, -55, 52, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        // Angry Eyes
+        ctx.fillStyle = '#fdf5e2';
+        ctx.beginPath();
+        ctx.arc(-18, -62, 14, 0, Math.PI * 2);
+        ctx.arc(18, -62, 14, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = '#2b211b';
+        ctx.beginPath();
+        ctx.arc(-18, -62, 6, 0, Math.PI * 2);
+        ctx.arc(18, -62, 6, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.restore();
+    }
+
+    renderEnemyBullet(ctx, ep) {
+        ctx.save();
+        ctx.translate(ep.x, ep.y);
+        ctx.strokeStyle = '#2b211b';
+        ctx.lineWidth = 3.5;
+
+        // Soft pink glow halo for parriable objects
+        if (ep.pink) {
+            ctx.fillStyle = 'rgba(255, 102, 196, 0.45)';
+            ctx.beginPath();
+            ctx.arc(0, 0, ep.r + 14, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        if (ep.kind === 'dirt' || ep.kind === 'worm') {
+            ctx.fillStyle = ep.pink ? '#ff66c4' : '#6b4226';
+            ctx.beginPath();
+            ctx.arc(0, 0, ep.r, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            // Eyes on earthworm
+            if (ep.kind === 'worm') {
+                ctx.fillStyle = '#fdf5e2';
+                ctx.beginPath();
+                ctx.arc(-8, -6, 7, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+                ctx.fillStyle = '#2b211b';
+                ctx.beginPath();
+                ctx.arc(-8, -6, 3, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        } else if (ep.kind === 'tear') {
+            ctx.fillStyle = ep.pink ? '#ff66c4' : '#38b6ff';
+            ctx.beginPath();
+            ctx.arc(0, 4, ep.r, 0, Math.PI * 2);
+            ctx.moveTo(-ep.r, 2);
+            ctx.lineTo(0, -ep.r * 1.6);
+            ctx.lineTo(ep.r, 2);
+            ctx.fill();
+            ctx.stroke();
+        } else if (ep.kind === 'carrot_missile') {
+            const ang = Math.atan2(ep.vy, ep.vx);
+            ctx.rotate(ang);
+            ctx.fillStyle = ep.pink ? '#ff66c4' : '#e67e22';
+            ctx.beginPath();
+            ctx.roundRect(-24, -14, 48, 28, 12);
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.fillStyle = '#556b2f';
+            ctx.beginPath();
+            ctx.roundRect(-34, -8, 14, 16, 4);
+            ctx.fill();
+            ctx.stroke();
+        } else if (ep.kind === 'ring') {
+            ctx.fillStyle = ep.pink ? '#ff66c4' : '#00d2d3';
+            ctx.beginPath();
+            ctx.arc(0, 0, ep.r, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.fillStyle = '#eddab8';
+            ctx.beginPath();
+            ctx.arc(0, 0, ep.r * 0.6, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+        }
+
+        ctx.restore();
+    }
+
+    drawSmokePuff(ctx, sp) {
+        ctx.save();
+        ctx.translate(sp.x, sp.y);
+        const alpha = Math.max(0, sp.life / sp.maxLife);
+        ctx.globalAlpha = alpha;
+        ctx.fillStyle = '#fdf5e2';
+        ctx.strokeStyle = '#2b211b';
+        ctx.lineWidth = 3;
+
+        const s = sp.scale * (1.3 - alpha * 0.3);
+        ctx.scale(s, s);
+
+        ctx.beginPath();
+        ctx.arc(-14, 0, 14, 0, Math.PI * 2);
+        ctx.arc(0, -10, 18, 0, Math.PI * 2);
+        ctx.arc(14, 0, 14, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.restore();
+    }
+
+    drawVintageStar(ctx, x, y, r, color) {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.strokeStyle = '#2b211b';
+        ctx.lineWidth = 3;
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        for (let i = 0; i < 5; i++) {
+            ctx.lineTo(Math.cos((18 + i * 72) * 0.01745) * r, -Math.sin((18 + i * 72) * 0.01745) * r);
+            ctx.lineTo(Math.cos((54 + i * 72) * 0.01745) * (r * 0.5), -Math.sin((54 + i * 72) * 0.01745) * (r * 0.5));
+        }
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+        ctx.restore();
+    }
+}
+
+let GameApp;
+window.addEventListener('DOMContentLoaded', () => {
+    GameApp = new CupheadGame();
+});
+</script>
+</body>
+</html>
